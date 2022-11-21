@@ -2,7 +2,6 @@ import mysql from "mysql2/promise";
 import { PassablePoint, Position } from "../../types";
 import * as dirdist from "./dirdist";
 import * as db from "../../database";
-import { dir } from "console";
 
 /** 地点探索距離[m] */
 const distance = 1;
@@ -14,12 +13,10 @@ async function getPassPos(
   connected: mysql.PoolConnection
 ): Promise<PassablePoint[]> {
   const result: PassablePoint[] = [];
-
+  const passableSql =
+    "SELECT radius, lat, lng from passableTable LOCK IN SHARE MODE";
   const isPassable = db.extractElems(
-    await db.executeTran(
-      connected,
-      "SELECT radius, lat, lng from passableTable LOCK IN SHARE MODE"
-    )
+    await db.executeTran(connected, passableSql)
   );
   if (isPassable !== undefined) {
     for (const elem of isPassable) {
@@ -55,7 +52,7 @@ function isReachable(
   const interval = dt / Math.round(dirdist.distanceTo(p, q));
   const direction = dirdist.direction(p, q);
   for (let t = 0; t <= 1; t += interval) {
-    const middle: Position = dirdist.moveBy(p, dt, direction);
+    const middle: Position = dirdist.moveBy(p, t, direction);
     if (!isPassable(middle, passPoints)) return false;
   }
   return true;

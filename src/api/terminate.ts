@@ -12,17 +12,25 @@ async function terminate(userId: string): Promise<ApiResult> {
   if (typeof userId === "undefined") {
     return report(result);
   }
-  if ((await global.existUser(userId)) === false) {
-    return report(result);
-  }
 
-  let bool: boolean =
-    (await global.executeEnd(userId)) &&
-    (await global.executeTerminate(userId));
-  if (!bool) {
-    return report(result);
+  const conn = await db.createNewConn();
+
+  try {
+    await conn.beginTransaction();
+    if ((await global.existUserTran(conn, userId)) === true) {
+      let bool: boolean =
+        (await global.executeEnd(conn, userId)) &&
+        (await global.executeTerminate(conn, userId));
+      if (bool) {
+        result.succeeded = true;
+      }
+    }
+  } catch (err) {
+    await conn.rollback();
+    console.log(err);
+  } finally {
+    conn.release();
   }
-  result.succeeded = true;
   return report(result);
 }
 

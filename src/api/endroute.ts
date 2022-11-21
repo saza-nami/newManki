@@ -8,18 +8,27 @@ import report from "./_report";
 
 async function endRoute(userId: string): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
-  // 入力チェック
+  // check input
   if (typeof userId === "undefined") {
     return report(result);
   }
-  if ((await global.existUser(userId)) === false) {
-    return report(result);
-  }
 
-  if ((await global.executeEnd(userId)) === false) {
-    return report(result);
+  const conn = await db.createNewConn();
+
+  try {
+    await conn.beginTransaction();
+    if ((await global.existUserTran(conn, userId)) === true) {
+      if ((await global.executeEnd(conn, userId)) === true) {
+        result.succeeded = true;
+      }
+    }
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    console.log(err);
+  } finally {
+    conn.release();
   }
-  result.succeeded = true;
   return report(result);
 }
 
