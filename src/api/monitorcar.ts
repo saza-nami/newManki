@@ -9,55 +9,86 @@ import report from "./_report";
 interface MonitorCar extends ApiResult {
   route?: Position[][];
   dest?: Position[];
+  arrival?: boolean;
+  finish?: boolean;
+  status?: number;
   nowPoint?: Position;
   battery?: number;
 }
 
 // arrival true を確認する
-
-const reqIdsSql =
-  "SELECT carId, orderId FROM userTable WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL";
-const carInfoSql = "CALL carInfoProc(?, ?, @a, @b, @c, @d, @e, @f, @g)";
+const reqOrderStatusSql =
+  "SELECT route, dest, arrival, finish FROM orderTable WHERE orderId = \
+  (SELECT orderId FROM userTable \
+    WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL) \
+    LOCK IN SHARE MODE";
+const reqCarStatusSql =
+  "SELECT status, nowPoint, battery FROM carTable WHERE carId = \
+  (SELECE carId FROM userTable \
+    WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL) \
+    LOCK IN SHARE MODE";
 
 async function monitorCar(userId: string): Promise<MonitorCar> {
+  // return value of API
   const result: MonitorCar = { succeeded: false };
-  // 入力チェック
+  // check input
   if (typeof userId === "undefined") {
     return report(result);
   }
-  if ((await global.existUser(userId)) === false) {
-    return report(result);
-  }
 
-  const ids = await db.execute(reqIdsSql, [userId]);
-  let carId = "";
-  let orderId = "";
-  if (Array.isArray(ids) && Array.isArray(ids[0])) {
-    if (typeof ids[0][0] !== "undefined") {
-      if (
-        "carId" in ids[0][0] &&
-        ids[0][0]["carId"] !== undefined &&
-        "orderId" in ids[0][0] &&
-        ids[0][0]["orderId"] !== undefined
-      ) {
-        carId = ids[0][0]["carId"];
-        orderId = ids[0][0]["orderId"];
+  const conn = await db.createNewConn();
+
+  try {
+    await conn.beginTransaction();
+    if ((await global.existUserTran(conn, userId)) === true) {
+      const orderStatus = db.extractElem(
+        await db.executeTran(conn, reqOrderStatusSql, [userId])
+      );
+      const carStatus = db.extractElem(
+        await db.executeTran(conn, reqCarStatusSql, [userId])
+      );
+      if (orderStatus !== undefined) {
+        if (carStatus !== undefined) {
+          if (
+            "route" in orderStatus &&
+            "dest" in orderStatus &&
+            "arrival" in orderStatus &&
+            "finish" in orderStatus &&
+            "status" in carStatus &&
+            "nowPoint" in carStatus &&
+            "battery" in carStatus
+          ) {
+            result.succeeded = true;
+            result.route = orderStatus["route"];
+            result.dest = orderStatus["dest"];
+            result.arrival = orderStatus["arrival"];
+            result.finish = orderStatus["finish"];
+            result.status = carStatus["status"];
+            result.nowPoint = carStatus["nowPoint"];
+            result.battery = carStatus["battery"];
+          }
+        } else {
+          if (
+            "route" in orderStatus &&
+            "dest" in orderStatus &&
+            "arrival" in orderStatus &&
+            "finish" in orderStatus
+          ) {
+            result.succeeded = true;
+            result.route = orderStatus["route"];
+            result.dest = orderStatus["dest"];
+            result.arrival = orderStatus["arrival"];
+            result.finish = orderStatus["finish"];
+          }
+        }
       }
     }
-  }
-
-  const rows = await db.execute(carInfoSql, [carId, orderId]);
-
-  if (Array.isArray(rows) && Array.isArray(rows[0])) {
-    // orderId が null か
-    if ("orderId" in rows[0][0] && rows[0][0]["orderId"] === null) {
-      result.succeeded = true;
-    } else {
-      // carId から status:2 が得られるか
-      if ("status" in rows[0][0] && rows[0][0]["status"] === 2) {
-        result.succeeded = true;
-      }
-    }
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    console.log(err);
+  } finally {
+    conn.release();
   }
   return report(result);
 }
