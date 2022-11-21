@@ -53,7 +53,7 @@ function isReachable(
   const direction = dirdist.direction(p, q);
   let middle: Position = p;
   for (let t = 0; t <= 1; t += interval) {
-    middle = dirdist.moveBy(middle, t, direction);
+    middle = dirdist.moveBy(middle, dt, direction);
     if (!isPassable(middle, passPoints)) return false;
   }
   return true;
