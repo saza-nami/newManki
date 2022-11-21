@@ -1,4 +1,4 @@
-// 経路探索API
+/* 経路探索API */
 
 import express from "express";
 import { ApiResult, Position, PassablePoint } from "../types";
@@ -13,13 +13,13 @@ interface CreateRoute extends ApiResult {
   reason?: string;
 }
 
-// 経路作成
 async function createRoute(
   userId: string,
   target: Position[]
 ): Promise<CreateRoute> {
+  // return values of API
   const result: CreateRoute = { succeeded: false };
-  // 入力チェック
+  // check input
   if (typeof userId === "undefined" || typeof target === "undefined") {
     return report(result);
   }
@@ -27,9 +27,12 @@ async function createRoute(
     return report(result);
   }
 
-  const conn = await db.createNewConn();
+  const conn = await db.createNewConn(); // database connection
+
+  // begin transaction
   try {
     await conn.beginTransaction();
+    // check exist user
     if ((await global.existUserTran(conn, userId)) === true) {
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
       for (const t of target) {

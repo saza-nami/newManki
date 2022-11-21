@@ -5,7 +5,7 @@ import * as db from "../../database";
 
 /** 地点探索距離[m] */
 const distance = 1;
-/** 通行可能判定を行う地点間の間隔 distance * dt */
+/** 通行可能判定を行う地点間の間隔 dt[m] */
 const dt = 1 / 10;
 
 /* databaseから通行可能領域点群を取得 */
@@ -13,36 +13,10 @@ async function getPassPos(
   connected: mysql.PoolConnection
 ): Promise<PassablePoint[]> {
   const result: PassablePoint[] = [];
-
+  const passableSql =
+    "SELECT radius, lat, lng from passableTable LOCK IN SHARE MODE";
   const isPassable = db.extractElems(
-    await db.executeTran(
-      connected,
-      "SELECT radius, lat, lng from passableTable"
-    )
-  );
-  if (isPassable !== undefined) {
-    for (const elem of isPassable) {
-      if ("radius" in elem && "lat" in elem && "lng" in elem) {
-        result.push({
-          position: { lat: Number(elem["lat"]), lng: Number(elem["lng"]) },
-          radius: Number(elem["radius"]),
-        });
-      }
-    }
-  }
-  return result;
-}
-
-async function getAllPassPos(
-  connected: mysql.PoolConnection
-): Promise<PassablePoint[]> {
-  const result: PassablePoint[] = [];
-
-  const isPassable = db.extractElems(
-    await db.executeTran(
-      connected,
-      "SELECT radius, lat, lng from passableTable LOCK IN SHARE MODE"
-    )
+    await db.executeTran(connected, passableSql)
   );
   if (isPassable !== undefined) {
     for (const elem of isPassable) {
@@ -58,10 +32,14 @@ async function getAllPassPos(
 }
 
 /** distanceの届く範囲内判定 */
-function reachIn(p: Position, q: Position, passPos: PassablePoint[]): boolean {
+function reachIn(
+  p: Position,
+  q: Position,
+  passPoints: PassablePoint[]
+): boolean {
   const dis = dirdist.distanceTo(p, q);
   if (dis > distance && !approx(dis, distance)) return false;
-  if (!isReachable(p, q, passPos)) return false;
+  if (!isReachable(p, q, passPoints)) return false;
   return true;
 }
 
@@ -69,14 +47,13 @@ function reachIn(p: Position, q: Position, passPos: PassablePoint[]): boolean {
 function isReachable(
   p: Position,
   q: Position,
-  passPos: PassablePoint[]
+  passPoints: PassablePoint[]
 ): boolean {
-  for (let t = 0; t <= 1; t += dt) {
-    const middle: Position = {
-      lat: (q.lat - p.lat) * t + p.lat,
-      lng: (q.lng - p.lng) * t + p.lng,
-    };
-    if (!isPassable(middle, passPos)) return false;
+  const interval = dt / Math.round(dirdist.distanceTo(p, q));
+  const direction = dirdist.direction(p, q);
+  for (let t = 0; t <= 1; t += interval) {
+    const middle: Position = dirdist.moveBy(p, t, direction);
+    if (!isPassable(middle, passPoints)) return false;
   }
   return true;
 }
@@ -115,6 +92,5 @@ export {
   isReachable,
   reachIn,
   getPassPos,
-  getAllPassPos,
   distance,
 };

@@ -12,26 +12,31 @@ interface RouteNames extends ApiResult {
   available?: boolean[];
 }
 
+const lockTableSql = "LOCK TABLES userTable WRITE"; // lock table
+const unlockTableSql = "UNLOCK TABLES"; // unlock table
 const reqRouteNames = "SELECT routeName, route FROM routeTable";
 
 async function routeNames(userId: string): Promise<RouteNames> {
+  // return value of API
   const result: RouteNames = { succeeded: false };
-  // 入力チェック
+  // check parameter
   if (typeof userId === "undefined") {
     return report(result);
   }
 
-  const conn = await db.createNewConn();
-
+  const conn = await db.createNewConn(); // database connection
+  // begin transaction
   try {
+    await conn.beginTransaction();
+    await conn.query(lockTableSql);
     if ((await global.existUserTran(conn, userId)) === true) {
       const rows = db.extractElems(await db.executeTran(conn, reqRouteNames));
       let routeNames = [];
       let availableFlag: boolean[] = [];
       let routes: Position[][][] = [];
-      const passPoints: PassablePoint[] = await map.getAllPassPos(conn);
+      const passPoints: PassablePoint[] = await map.getPassPos(conn);
 
-      // 経路名と経路をセットで取得
+      // Tie routeName to route
       if (rows !== undefined) {
         for (const elem of rows) {
           if ("routeName" in elem && "route" in elem) {
@@ -42,19 +47,17 @@ async function routeNames(userId: string): Promise<RouteNames> {
       }
 
       let reachable: boolean = true;
-      // 得られた経路分ループ
       for (const route in routes) {
         reachable = true;
         availableFlag[route] = false;
-        // 経路に存在する地点すべてが到達可能か判定する
         for (const points in routes[route]) {
           for (let i = 0; i < routes[route][points].length - 1; i++) {
             if (
-              !map.isReachable(
+              map.isReachable(
                 routes[route][points][i],
                 routes[route][points][i + 1],
                 passPoints
-              )
+              ) === null
             ) {
               reachable = false;
               break;
@@ -77,6 +80,7 @@ async function routeNames(userId: string): Promise<RouteNames> {
     await conn.rollback();
     console.log(err);
   } finally {
+    await conn.query(unlockTableSql);
     conn.release();
   }
   return report(result);

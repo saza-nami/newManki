@@ -8,7 +8,6 @@ const app = express();
 const port = 3001; // 80
 
 const corsOptions: cors.CorsOptions = {
-  // origin: "http://karawasa.kohga.local",
   origin: [
     "http://localhost",
     "http://localhost:3000",

@@ -88,7 +88,7 @@ async function Astar(
     if (childNode.parent === null) break;
     childNode = nodes[childNode.parent];
   }
-  return await optimization(connected, result, passPoints);
+  return await optimization(result, passPoints);
 }
 
 /** 地点群から未評価最小コスト地点の算出 */
@@ -109,7 +109,6 @@ function getMinIndex(nodes: Node[]): number {
 
 /** 最適経路直線化 */
 async function optimization(
-  connected: mysql.PoolConnection,
   p: Position[],
   passPoints: PassablePoint[]
 ): Promise<Position[]> {

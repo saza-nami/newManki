@@ -15,24 +15,32 @@ const reqRouteSql = "SELECT route, dest from routeTable WHERE routeName = ?";
 
 async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
   const result: RouteInfo = { succeeded: false };
-  // 入力チェック
+  // check input
   if (typeof userId === "undefined" || typeof routeName === "undefined") {
     return report(result);
   }
-  if ((await global.existUser(userId)) === false) {
-    return report(result);
-  }
 
-  // その名前の経路を取得する
-  const rows = await db.execute(reqRouteSql, [routeName]);
-  if (Array.isArray(rows) && Array.isArray(rows[0])) {
-    if (typeof rows[0][0] !== "undefined") {
-      if ("route" in rows[0][0] && "dest" in rows[0][0]) {
+  const conn = await db.createNewConn();
+
+  // begin transaction
+  try {
+    await conn.beginTransaction();
+    if ((await global.existUserTran(conn, userId)) === true) {
+      // その名前の経路を取得する
+      const rows = db.extractElem(
+        await db.executeTran(conn, reqRouteSql, [routeName])
+      );
+      if (rows !== undefined && "route" in rows && "dest" in rows) {
         result.succeeded = true;
-        result.route = JSON.parse(rows[0][0]["route"]);
-        result.dest = JSON.parse(rows[0][0]["dest"]);
+        result.route = JSON.parse(rows["route"]);
+        result.dest = JSON.parse(rows["dest"]);
       }
     }
+  } catch (err) {
+    await conn.rollback();
+    console.log();
+  } finally {
+    conn.release();
   }
   return report(result);
 }

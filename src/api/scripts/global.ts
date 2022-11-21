@@ -103,51 +103,59 @@ export function routeToDest(route: Position[][]): Position[] {
     result.push(elem[0]);
   }
   result.push(route[route.length - 1].slice(-1)[0]);
-  return report(result);
+  return result;
 }
 
-export async function executeEnd(userId: string): Promise<boolean> {
-  console.log("END");
+export async function executeEnd(
+  conn: mysql.PoolConnection,
+  userId: string
+): Promise<boolean> {
   const getIdSql =
-    "SELECT orderId, carId FROM userTable WHERE userId = UUID_TO_BIN(?, 1)";
-  const userTable = await db.execute(getIdSql, [userId]);
-  if (Array.isArray(userTable) && Array.isArray(userTable[0])) {
-    if ("orderId" in userTable[0][0] && "carId" in userTable[0][0]) {
-      if (userTable[0][0]["orderId"] !== null) {
-        await db.execute(
-          "UPDATE orderTable SET nextPoint = NULL, arrival = TRUE, finish = TRUE, endAt = now() WHERE orderId = ?",
-          [userTable[0][0]["orderId"]]
-        );
-      }
-      if (userTable[0][0]["carId"]) {
-        await db.execute("UPDATE carTable SET status = 2 WHERE carId = ?", [
-          userTable[0][0]["carId"],
-        ]);
-      }
-      return true;
+    "SELECT orderId, carId FROM userTable \
+    WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
+  const updateOrderSql =
+    "UPDATE orderTable SET nextPoint = NULL, arrival = TRUE, \
+    finish = TRUE, endAt = now() WHERE orderId = ?";
+  const updateCarSql = "UPDATE carTable SET status = 2 WHERE carId = ?";
+  const userTable = db.extractElem(
+    await db.executeTran(conn, getIdSql, [userId])
+  );
+  if (
+    userTable !== undefined &&
+    "orderId" in userTable &&
+    "carId" in userTable
+  ) {
+    if (userTable["orderId"] !== null) {
+      await db.executeTran(conn, updateOrderSql, [userTable["orderId"]]);
     }
+    if (userTable["carId"] !== null) {
+      await db.executeTran(conn, updateCarSql, [userTable["carId"]]);
+    }
+    return true;
   }
   return false;
 }
 
-export async function executeTerminate(userId: string): Promise<boolean> {
+export async function executeTerminate(
+  conn: mysql.PoolConnection,
+  userId: string
+): Promise<boolean> {
   console.log("TERMINATE");
   const getCarIdSql =
-    "SELECT carId FROM userTable WHERE userId = UUID_TO_BIN(?, 1)";
-  const userTable = await db.execute(getCarIdSql, [userId]);
-  if (Array.isArray(userTable) && Array.isArray(userTable[0])) {
-    if ("carId" in userTable[0][0]) {
-      await db.execute(
-        "UPDATE userTable SET endAt = now() WHERE userId = UUID_TO_BIN(?, 1)",
-        [userId]
-      );
-      if (userTable[0][0]["carId"] !== null) {
-        await db.execute("UPDATE carTable SET status = 1 WHERE carId = ?", [
-          userTable[0][0]["carId"],
-        ]);
-      }
-      return true;
+    "SELECT carId FROM userTable \
+    WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
+  const updateUserSql =
+    "UPDATE userTable SET endAt = now() WHERE userId = UUID_TO_BIN(?, 1)";
+  const updateCarSql = "UPDATE carTable SET status = 1 WHERE carId = ?";
+  const userTable = db.extractElem(
+    await db.executeTran(conn, getCarIdSql, [userId])
+  );
+  if (userTable !== undefined && "carId" in userTable) {
+    if (userTable["carId"] !== null) {
+      await db.executeTran(conn, updateUserSql, [userId]);
+      await db.executeTran(conn, updateCarSql, [userTable["carId"]]);
     }
+    return true;
   }
   return false;
 }

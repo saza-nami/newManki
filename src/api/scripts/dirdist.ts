@@ -25,6 +25,21 @@ function distanceTo(p: Position, q: Position) {
   return Math.sqrt(Math.pow(dy * m, 2) + Math.pow(dx * n * Math.cos(my), 2));
 }
 
+// pからqの角度算出
+function direction(p: Position, q: Position) {
+  const a = deg2rad(p.lat);
+  const b = deg2rad(q.lat);
+  const d = deg2rad(q.lng - p.lng);
+
+  const r =
+    Math.PI / 2 -
+    Math.atan2(
+      Math.cos(a) * Math.tan(b) - Math.sin(a) * Math.cos(d),
+      Math.sin(d)
+    );
+  return normalize(rad2deg(r));
+}
+
 // p地点からdistance[m] direction[度]移動させた地点算出
 function moveBy(p: Position, distance: number, direction: number) {
   const clat = deg2rad(p.lat);
@@ -36,6 +51,12 @@ function moveBy(p: Position, distance: number, direction: number) {
     lng: normalizeLng(p.lng + rad2deg(dlng)),
   };
   return result;
+}
+
+function normalize(deg: number) {
+  while (deg > 360) deg -= 360;
+  while (deg < 0) deg += 360;
+  return deg;
 }
 
 function normalizeLat(lat: number) {
@@ -50,4 +71,4 @@ function normalizeLng(lng: number) {
   return lng;
 }
 
-export { distanceTo, moveBy };
+export { distanceTo, direction, moveBy };
