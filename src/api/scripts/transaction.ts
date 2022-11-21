@@ -9,7 +9,7 @@ export async function unallocateCarTran(): Promise<boolean> {
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    const passPoints: PassablePoint[] = await map.getAllPassPos(conn);
+    const passPoints: PassablePoint[] = await map.getPassPos(conn);
     let tmpAstar: Position[] | null = [];
     // 命令受理済みで車未割当のユーザの orderId を取得
     const order = db.extractElems(
@@ -51,22 +51,19 @@ export async function unallocateCarTran(): Promise<boolean> {
                 if (tmpAstar !== null) {
                   await db.executeTran(
                     conn,
-                    "UPDATE carTable SET status = 3 \
-                    WHERE carId = ? LOCK IN SHARE MODE",
+                    "UPDATE carTable SET status = 3 WHERE carId = ?",
                     [carId["carId"]]
                   );
                   await db.executeTran(
                     conn,
                     "UPDATE orderTable SET nextPoint = ?, arrival = FALSE, \
                     finish = FAlSE, carToRoute = ?, \
-                    pRoute = 0, pPoint = 0 WHERE orderId = ? \
-                    LOCK IN SHARE MODE",
+                    pRoute = 0, pPoint = 0 WHERE orderId = ?",
                     [tmpAstar[0], tmpAstar, orderId["orderId"]]
                   );
                   await db.executeTran(
                     conn,
-                    "UPDATE userTable SET carId = ? \
-                    WHERE orderId = ? LOCK IN SHARE MODE",
+                    "UPDATE userTable SET carId = ? WHERE orderId = ?",
                     [carId["carId"], orderId["orderId"]]
                   );
                   allocFlag = true;
@@ -93,7 +90,7 @@ export async function allocatedCarTran(): Promise<boolean> {
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    const passPoints: PassablePoint[] = await map.getAllPassPos(conn);
+    const passPoints: PassablePoint[] = await map.getPassPos(conn);
     let tmpAstar: Position[] | null = [];
     // 車が割当て済みで status が 2 かつ命令が終了していないユーザの orderId を取得
     const canditateAlloc = db.extractElems(
@@ -164,22 +161,19 @@ export async function allocatedCarTran(): Promise<boolean> {
           if (tmpAstar !== null) {
             await db.executeTran(
               conn,
-              "UPDATE carTable SET status = 3 \
-              WHERE carId = ? LOCK IN SHARE MODE",
+              "UPDATE carTable SET status = 3 WHERE carId = ?",
               [realloc.carId]
             );
             await db.executeTran(
               conn,
               "UPDATE orderTable SET nextPoint = ?, arrival = FALSE, \
               finish = FAlSE, carToRoute = ?, \
-              pRoute = 0, pPoint = 0 WHERE orderId = ? \
-              LOCK IN SHARE MODE",
+              pRoute = 0, pPoint = 0 WHERE orderId = ?",
               [tmpAstar[0], tmpAstar, realloc.orderId]
             );
             await db.executeTran(
               conn,
-              "UPDATE userTable SET carId = ? \
-              WHERE orderId = ? LOCK IN SHARE MODE",
+              "UPDATE userTable SET carId = ? WHERE orderId = ?",
               [realloc.carId, realloc.orderId]
             );
             allocFlag = true;
@@ -208,28 +202,24 @@ export async function allocatedCarTran(): Promise<boolean> {
               if (tmpAstar !== null) {
                 await db.executeTran(
                   conn,
-                  "UPDATE carTable SET status = 3 \
-                  WHERE carId = ? LOCK IN SHARE MODE",
+                  "UPDATE carTable SET status = 3 WHERE carId = ?",
                   [carId["carId"]]
                 );
                 await db.executeTran(
                   conn,
-                  "UPDATE carTable SET status = 1 \
-                  WHERE carId = ? LOCK IN SHARE MODE",
+                  "UPDATE carTable SET status = 1 WHERE carId = ?",
                   [realloc.carId]
                 );
                 await db.executeTran(
                   conn,
                   "UPDATE orderTable SET nextPoint = ?, arrival = FALSE, \
                   finish = FAlSE, carToRoute = ? \
-                  pRoute = 0, pPoint = 0 WHERE orderId = ? \
-                  LOCK IN SHARE MODE",
+                  pRoute = 0, pPoint = 0 WHERE orderId = ?",
                   [tmpAstar[0], tmpAstar, realloc.orderId]
                 );
                 await db.executeTran(
                   conn,
-                  "UPDATE userTable SET carId = ? \
-                  WHERE orderId = ? LOCK IN SHARE MODE",
+                  "UPDATE userTable SET carId = ? WHERE orderId = ?",
                   [carId["carId"], realloc.orderId]
                 );
                 allocFlag = true;

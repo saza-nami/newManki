@@ -103,7 +103,7 @@ export function routeToDest(route: Position[][]): Position[] {
     result.push(elem[0]);
   }
   result.push(route[route.length - 1].slice(-1)[0]);
-  return report(result);
+  return result;
 }
 
 export async function executeEnd(userId: string): Promise<boolean> {

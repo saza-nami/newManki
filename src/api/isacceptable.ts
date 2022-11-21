@@ -1,4 +1,4 @@
-// 状態遷移図でいうところの動作中チェックAPI
+/* 状態遷移図でいうところの動作中チェックAPI */
 
 import express from "express";
 import { ApiResult } from "../types";
@@ -6,51 +6,31 @@ import * as db from "../database";
 import * as global from "./scripts/global";
 import report from "./_report";
 
-const isAccceptableSql = "CALL isAcceptableProc(?, @a, @b)";
+const userStatusSql =
+  "SELECT carId orderId, endAt FROM userTable \
+  WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
+const completedOrderSql =
+  "SELECT endAt FROM orderTable WEHRE orderId = ? LOCK IN SHARE MODE";
+const reqCarStatus =
+  "SELECT status FROM carTable \
+  WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
 
-export async function isAccceptable(userId: string): Promise<ApiResult> {
+async function isAcceptableTran(userId: string): Promise<ApiResult> {
+  // return value of API
   const result: ApiResult = { succeeded: false };
-  // 入力チェック
-  if (typeof userId === "undefined") {
-    return report(result);
-  }
-  if ((await global.existUser(userId)) === false) {
-    return report(result);
-  }
-
-  // 新しく経路を作成できるか
-  const [rows, _] = await db.execute(isAccceptableSql, [userId]);
-  if (Array.isArray(rows) && Array.isArray(rows[0])) {
-    // orderId が null か
-    if ("orderId" in rows[0][0] && rows[0][0]["orderId"] === null) {
-      result.succeeded = true;
-    } else {
-      // carId から status:2 が得られるか
-      if ("status" in rows[0][0] && rows[0][0]["status"] === 2) {
-        result.succeeded = true;
-      }
-    }
-  }
-  return report(result);
-}
-
-export async function isAcceptableTran(userId: string): Promise<ApiResult> {
-  const result: ApiResult = { succeeded: false };
-  // 入力チェック
+  // check parameter
   if (typeof userId === "undefined") {
     return report(result);
   }
 
-  const conn = await db.createNewConn();
+  const conn = await db.createNewConn(); // database connection
+  // bedin transaction
   try {
     await conn.beginTransaction();
+    // check exist user
     if ((await global.existUserTran(conn, userId)) === true) {
       const isOrder = db.extractElem(
-        await db.executeTran(
-          conn,
-          "SELECT carId orderId, endAt FROM userTable WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE",
-          [userId]
-        )
+        await db.executeTran(conn, userStatusSql, [userId])
       );
       if (isOrder !== undefined && "orderId" in isOrder && "endAt" in isOrder) {
         if (isOrder["orderId"] === null && isOrder["endAt"] == null) {
@@ -58,20 +38,14 @@ export async function isAcceptableTran(userId: string): Promise<ApiResult> {
         } else {
           if ("carId" in isOrder && isOrder["carId"] !== undefined) {
             const isEndOrder = db.extractElem(
-              await db.executeTran(
-                conn,
-                "SELECT endAt FROM orderTable WEHRE orderId = ? LOCK IN SHARE MODE",
-                [isOrder["orderId"]]
-              )
+              await db.executeTran(conn, completedOrderSql, [
+                isOrder["orderId"],
+              ])
             );
             if (isEndOrder !== undefined && "endAt" in isEndOrder) {
-              if (isEndOrder["endAt"] === null) {
+              if (isEndOrder["endAt"] !== null) {
                 const carStatus = db.extractElem(
-                  await db.executeTran(
-                    conn,
-                    "SELECT status FROM carTable WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE",
-                    [isOrder["carId"]]
-                  )
+                  await db.executeTran(conn, reqCarStatus, [isOrder["carId"]])
                 );
                 if (
                   carStatus !== undefined &&

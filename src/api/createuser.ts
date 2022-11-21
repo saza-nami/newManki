@@ -1,4 +1,4 @@
-// 車を使えるかチェックするところで呼ばれるAPI (サービス利用開始)
+/* 車を使えるかチェックするところで呼ばれるAPI (サービス利用開始) */
 
 import express from "express";
 import { ApiResult, Access } from "../types";
@@ -9,34 +9,37 @@ interface CreateUserResult extends ApiResult {
   userId?: string; // UUID
 }
 
-const createUserSql = "CALL createUserProc(?)";
-const maxUsers = 100; // FIXME
-
+const maxUsers = 100; // FIXME, available users of system
+// dos attack countermeasures proc
 let lastLog: Access = { date: [0], ipAddress: ["anyonyomarubobo"] };
 
+const lockTableSql = "LOCK TABLES userTable WRITE"; // lock table
+const unlockTableSql = "UNLOCK TABLES"; // unlock table
+const countUsersSql = "SELECT COUNT(*) FROM userTable WHERE endAt IS NULL";
+const insertUserSql = "INSERT INTO userTable() VALUES ()";
+// req new user's userId
+const reqLastUserIdSql =
+  "SELECT BIN_TO_UUID(userId, 1) FROM userTable \
+  ORDER BY userId DESC, startAt DESC LIMIT 1";
+
 async function createUserTran(): Promise<CreateUserResult> {
+  // return value of API
   const result: CreateUserResult = { succeeded: false };
-  const conn = await db.createNewConn();
+
+  const conn = await db.createNewConn(); // database connection
+  // begin transaction
   try {
     await conn.beginTransaction();
-    await conn.query("LOCK TABLES userTable WRITE");
-    const users = db.extractElem(
-      await db.executeTran(
-        conn,
-        "SELECT COUNT(*) FROM userTable WHERE endAt IS NULL"
-      )
-    );
-    let userCount: number = maxUsers; // 利用中ユーザ数
+    await conn.query(lockTableSql); // Use query!
+    const users = db.extractElem(await db.executeTran(conn, countUsersSql));
+    let userCount: number = maxUsers; // Active users proc
     if (users !== undefined && "COUNT(*)" in users) {
       userCount = users["COUNT(*)"];
     }
     if (userCount < maxUsers) {
-      await db.executeTran(conn, "INSERT INTO userTable() VALUES ()");
+      await db.executeTran(conn, insertUserSql);
       const userId = db.extractElem(
-        await db.executeTran(
-          conn,
-          "SELECT BIN_TO_UUID(userId, 1) FROM userTable ORDER BY userId DESC, startAt DESC LIMIT 1"
-        )
+        await db.executeTran(conn, reqLastUserIdSql)
       );
       if (
         userId !== undefined &&
@@ -52,30 +55,43 @@ async function createUserTran(): Promise<CreateUserResult> {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query("UNLOCK TABLES");
+    await conn.query(unlockTableSql); // Use query!
     conn.release();
   }
   return report(result);
 }
 
-// lastLogが限界を迎えないような実装にするべき
+/* lastLogが限界を迎えないような実装にするべき */
 export default express.Router().get("/createUser", async (req, res) => {
   try {
-    // Dos 対策
-    if (lastLog.ipAddress.indexOf(req.ip) >= 0) {
-      // 10 秒以内に同じ Ip から API を叩かれたら Dos 攻撃とみなす
+    // dos attack countermeasures
+    if (lastLog.ipAddress.indexOf(req.ip) > -1) {
       if (
         Date.now() - lastLog.date[lastLog.ipAddress.indexOf(req.ip)] <
         10000
       ) {
-        // 攻撃の度に時間を更新する
+        // update attacker's log
         lastLog.date[lastLog.ipAddress.indexOf(req.ip)] = Date.now();
+        let date = lastLog.date[lastLog.ipAddress.indexOf(req.ip)];
+        let ip = lastLog.ipAddress[lastLog.ipAddress.indexOf(req.ip)];
+        lastLog.date.splice(
+          lastLog.ipAddress.indexOf(req.ip),
+          lastLog.ipAddress.indexOf(req.ip)
+        );
+        lastLog.ipAddress.splice(
+          lastLog.ipAddress.indexOf(req.ip),
+          lastLog.ipAddress.indexOf(req.ip)
+        );
+        lastLog.date.unshift(date);
+        lastLog.ipAddress.unshift(ip);
         return res.json({ succeeded: false });
       }
     }
+    // add new user log
     lastLog.date.push(Date.now());
     lastLog.ipAddress.push(req.ip);
 
+    // main process
     res.json(await createUserTran());
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
