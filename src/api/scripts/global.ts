@@ -1,7 +1,6 @@
 import mysql from "mysql2/promise";
 import * as db from "../../database";
 import { Position } from "../../types";
-import report from "../_report";
 
 export async function existUser(userId: string): Promise<boolean> {
   // JSON で送られてきた userId が UUID の形式か
@@ -72,14 +71,15 @@ export async function existCar(carId: string): Promise<boolean> {
   return false;
 }
 
-/*
-export async function existCar(
+export async function existCarTran(
   connected: mysql.PoolConnection,
   carId: string
 ): Promise<boolean> {
   // JSON で送られてきた carId が UUID の形式か
   const isUuidSql = "SELECT IS_UUID(?) as UUID";
-  const bin = await db.executeTran(connected, isUuidSql, [carId]);
+  const bin = db.extractElem(
+    await db.executeTran(connected, isUuidSql, [carId])
+  );
   // carId が存在するか
   const existCarSql =
     "SELECT COUNT(*) from carTable WHERE carId = UUID_TO_BIN(?, 1)";
@@ -95,7 +95,6 @@ export async function existCar(
   }
   return false;
 }
-*/
 
 export function routeToDest(route: Position[][]): Position[] {
   const result: Position[] = [];
