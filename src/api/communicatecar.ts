@@ -216,19 +216,31 @@ async function authSequence(carId: string, sequence: number): Promise<boolean> {
 
 export default express.Router().post("/sendCarInfo", async (req, res) => {
   try {
-    // Dos 対策
+    // dos attack countermeasures
     if (req.body.request === "hello") {
-      if (lastLog.ipAddress.indexOf(req.ip) >= 0) {
-        // 10 秒以内に同じ Ip から API を叩かれたら Dos 攻撃とみなす
+      if (lastLog.ipAddress.indexOf(req.ip) > -1) {
         if (
           Date.now() - lastLog.date[lastLog.ipAddress.indexOf(req.ip)] <
           10000
         ) {
-          // 攻撃の度に時間を更新する
+          // update attacker's log
           lastLog.date[lastLog.ipAddress.indexOf(req.ip)] = Date.now();
+          let date = lastLog.date[lastLog.ipAddress.indexOf(req.ip)];
+          let ip = lastLog.ipAddress[lastLog.ipAddress.indexOf(req.ip)];
+          lastLog.date.splice(
+            lastLog.ipAddress.indexOf(req.ip),
+            lastLog.ipAddress.indexOf(req.ip)
+          );
+          lastLog.ipAddress.splice(
+            lastLog.ipAddress.indexOf(req.ip),
+            lastLog.ipAddress.indexOf(req.ip)
+          );
+          lastLog.date.unshift(date);
+          lastLog.ipAddress.unshift(ip);
           return res.json({ succeeded: false });
         }
       }
+      // add new user log
       lastLog.date.push(Date.now());
       lastLog.ipAddress.push(req.ip);
     }
