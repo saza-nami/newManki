@@ -1,7 +1,8 @@
 import mysql from "mysql2/promise";
 import { Position, PassablePoint, AllocatedCar, proceed } from "../../types";
-import * as db from "../../database";
 import * as astar from "./notNotAstar";
+import * as db from "../../database";
+import * as global from "./global";
 import * as map from "./map";
 
 export async function unallocateCarTran(): Promise<boolean> {
@@ -242,18 +243,35 @@ export async function allocatedCarTran(): Promise<boolean> {
   }
 }
 
-/*
-export async function intervalCar(): Promise<boolean> {
+export async function intervalCarTran(): Promise<boolean> {
   const result = false;
   const intervalSql =
     "UPDATE carTable SET intervalCount = intervalCount + 1 \
     WHERE lastAt <= SUBTIME(NOW(), '00:00:10') && intevalCount < 3";
-  const errorCarsSql = "SELECT carId FROM carTable WHERE intevalCount = 3";
+  const errorCarsSql =
+    "SELECT carId FROM carTable WHERE intevalCount = 3 LOCK IN SHARE MODE";
+  const stopCarSql = "UPDATE carTable SET status = 5 WHERE carId = ?";
+  const reqEndRouteUserSql =
+    "SELECT BIN_TO_UUID(userId, 1) FROM userTable \
+    WHERE carId = ? AND endAt IS NULL LOCK IN SHARE MODE";
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
     await db.executeTran(conn, intervalSql);
-    const cars = db.extractElems(await db.executeTran(conn));
+    const cars = db.extractElems(await db.executeTran(conn, errorCarsSql));
+    if (cars !== undefined) {
+      for (const err of cars) {
+        if ("carId" in err) {
+          await db.executeTran(conn, stopCarSql, [err["carId"]]);
+          const user = db.extractElem(
+            await db.executeTran(conn, reqEndRouteUserSql, err["carId"])
+          );
+          if (user !== undefined && "userId" in user) {
+            await global.executeEnd(conn, user["userId"]);
+          }
+        }
+      }
+    }
     await conn.commit();
   } catch (err) {
     await conn.rollback();
@@ -263,7 +281,6 @@ export async function intervalCar(): Promise<boolean> {
   }
   return result;
 }
-*/
 
 export async function progressTran(
   connected: mysql.PoolConnection,

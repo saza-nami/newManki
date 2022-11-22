@@ -18,12 +18,9 @@ async function terminate(userId: string): Promise<ApiResult> {
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
-      let bool: boolean =
-        (await global.executeEnd(conn, userId)) &&
-        (await global.executeTerminate(conn, userId));
-      if (bool) {
-        result.succeeded = true;
-      }
+      await global.executeEnd(conn, userId);
+      await global.executeTerminate(conn, userId);
+      result.succeeded = true;
     }
   } catch (err) {
     await conn.rollback();

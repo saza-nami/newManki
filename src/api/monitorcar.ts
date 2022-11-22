@@ -11,7 +11,7 @@ interface MonitorCar extends ApiResult {
   dest?: Position[];
   arrival?: boolean;
   finish?: boolean;
-  status?: number;
+  status?: boolean;
   nowPoint?: Position;
   battery?: number;
 }
@@ -35,7 +35,7 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
   if (typeof userId === "undefined") {
     return report(result);
   }
-
+  const rnd = Math.random() * 100;
   const conn = await db.createNewConn();
 
   try {
@@ -58,14 +58,17 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             "nowPoint" in carStatus &&
             "battery" in carStatus
           ) {
-            result.succeeded = true;
             result.route = orderStatus["route"];
             result.dest = orderStatus["dest"];
             result.arrival = orderStatus["arrival"] ? true : false;
             result.finish = orderStatus["finish"] ? true : false;
-            result.status = carStatus["status"];
+            result.status =
+              carStatus["status"] == 5 || carStatus["status"] == 6
+                ? true
+                : false;
             result.nowPoint = carStatus["nowPoint"];
-            result.battery = carStatus["battery"];
+            // result.battery = carStatus["battery"];
+            result.battery = rnd; // FOR DEBUG
           }
         } else {
           if (
@@ -74,7 +77,6 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             "arrival" in orderStatus &&
             "finish" in orderStatus
           ) {
-            result.succeeded = true;
             result.route = orderStatus["route"];
             result.dest = orderStatus["dest"];
             result.arrival = orderStatus["arrival"] ? true : false;
@@ -82,6 +84,7 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
           }
         }
       }
+      result.succeeded = true;
     }
     await conn.commit();
   } catch (err) {
