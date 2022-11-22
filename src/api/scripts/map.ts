@@ -6,7 +6,7 @@ import * as db from "../../database";
 /** 地点探索距離[m] */
 const distance = 1;
 /** 通行可能判定を行う地点間の間隔 dt[m] */
-const dt = 1 / 10;
+const dt = distance / 10;
 
 /* databaseから通行可能領域点群を取得 */
 async function getPassPos(

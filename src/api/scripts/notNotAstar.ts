@@ -1,11 +1,10 @@
-import mysql from "mysql2/promise";
 import { Position, Node, PassablePoint } from "../../types";
+
 import * as map from "./map";
 import * as dirdist from "./dirdist";
 
 /** 経路探索 */
 async function Astar(
-  connected: mysql.PoolConnection,
   start: Position,
   goal: Position,
   passPoints: PassablePoint[]
@@ -33,7 +32,7 @@ async function Astar(
       nodes[minIndex].comfirm = true;
       const newNodes = map.addNode(nodes[minIndex].position);
       for (const n of newNodes) {
-        let flag = false;
+        let flag = true;
         if (map.reachIn(nodes[minIndex].position, n, passPoints)) {
           const node: Node = {
             position: n,
@@ -44,9 +43,11 @@ async function Astar(
             comfirm: false,
             parent: minIndex,
           };
+          // ゴール到達可能かつ候補点の中で最適か
           if (
             map.reachIn(node.position, goal, passPoints) &&
-            dirdist.distanceTo(node.position, goal) < goalNode.gCost
+            node.gCost + dirdist.distanceTo(node.position, goal) <
+              goalNode.gCost
           ) {
             goalNode = {
               position: goal,
@@ -55,7 +56,6 @@ async function Astar(
               comfirm: true,
               parent: nodes.length,
             };
-            nodes.push(node);
           } else {
             // 評価済み地点重複確認
             for (let i = 0; i < nodes.length; i++) {
@@ -67,13 +67,13 @@ async function Astar(
                   if (nodes[i].comfirm) node.comfirm = true;
                   nodes[i] = node;
                 }
-                flag = true;
+                flag = false;
                 break;
               }
             }
           }
           // 評価済み地点未重複の場合
-          if (!flag) nodes.push(node);
+          if (flag) nodes.push(node);
         }
       }
     } else {
