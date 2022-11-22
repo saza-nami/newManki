@@ -18,9 +18,8 @@ async function endRoute(userId: string): Promise<ApiResult> {
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
-      if ((await global.executeEnd(conn, userId)) === true) {
-        result.succeeded = true;
-      }
+      await global.executeEnd(conn, userId);
+      result.succeeded = true;
     }
     await conn.commit();
   } catch (err) {

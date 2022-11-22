@@ -15,7 +15,7 @@ interface ExecRoute extends ApiResult {
 const lockTablesSql =
   "LOCK TABLES orderTable WRITE, userTable WRITE, passableTable READ";
 // unlock tables
-const unlockTables = "UNLOCK TABLES";
+const unlockTablesSql = "UNLOCK TABLES";
 const reqUsersOrderSql =
   "SELECT orderId FROM userTable \
   WHERE userId = UUID_TO_BIN(?,1) AND endAt IS NULL \
@@ -113,7 +113,7 @@ async function reserveRoute(
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTables);
+    await conn.query(unlockTablesSql);
     conn.release();
   }
   return report(result);

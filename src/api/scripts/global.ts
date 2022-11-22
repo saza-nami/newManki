@@ -96,6 +96,24 @@ export async function existCarTran(
   return false;
 }
 
+export async function authSequenceTran(
+  conn: mysql.PoolConnection,
+  carId: string,
+  sequence: number
+): Promise<boolean> {
+  const authSequenceSql =
+    "SELECT sequence FROM carTable WHERE carId = UUID_TO_BIN(?, 1)";
+  const row = db.extractElem(
+    await db.executeTran(conn, authSequenceSql, [carId])
+  );
+  if (row !== undefined && "sequence" in row) {
+    if (row["sequence"] === sequence) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function routeToDest(route: Position[][]): Position[] {
   const result: Position[] = [];
   for (const elem of route) {
@@ -130,9 +148,8 @@ export async function executeEnd(
     if (userTable["carId"] !== null) {
       await db.executeTran(conn, updateCarSql, [userTable["carId"]]);
     }
-    return true;
   }
-  return false;
+  return true;
 }
 
 export async function executeTerminate(
@@ -149,12 +166,11 @@ export async function executeTerminate(
   const userTable = db.extractElem(
     await db.executeTran(conn, getCarIdSql, [userId])
   );
+  await db.executeTran(conn, updateUserSql, [userId]);
   if (userTable !== undefined && "carId" in userTable) {
     if (userTable["carId"] !== null) {
-      await db.executeTran(conn, updateUserSql, [userId]);
       await db.executeTran(conn, updateCarSql, [userTable["carId"]]);
     }
-    return true;
   }
-  return false;
+  return true;
 }
