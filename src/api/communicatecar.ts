@@ -14,6 +14,20 @@ interface ReplyInfo extends ApiResult {
 
 let lastLog: Access = { date: [0], ipAddress: ["anyonyomarubobo"] };
 
+const helloSql = "";
+const pingSql = "";
+const haltSql = "";
+// lock tables
+const lockTablesSql = "LOCK TABLES carTable WRITE";
+// unlock tables
+const unlockTablesSql = "UNLOCK TABLES";
+const insertCarSql =
+  "INSERT INTO carTable (sequence, nowPoint, battery) \
+  VALUES (?, ?, ?)";
+const reqLastCarIdSql =
+  "SELECT BIN_TO_UUID(carId, 1) FROM carTable \
+  ORDER BY carId DESC, lastAt DESC LIMIT 1";
+
 async function createReply(
   carId: string,
   request: string,
@@ -22,54 +36,64 @@ async function createReply(
   battery: number
 ): Promise<ReplyInfo> {
   const result: ReplyInfo = { succeeded: false };
-  const rndSeq = Math.trunc(Math.random() * 199) + 1; // FIXME
+  const rndSeq = Math.trunc(Math.random() * 4294967294) + 1; // FIXME
+
   if (typeof request === "undefined") {
     return report(result);
   }
-  if (request === "hello") {
-    /*
-    const [carId, _] = await db.execute("CALL addCarProc(?, ?, ?, @a)", [
-      rndSeq,
-      location,
-      battery,
-    ]);
-    if (Array.isArray(carId) && Array.isArray(carId[0])) {
-      if ("carId" in carId[0][0]) {
+
+  const conn = await db.createNewConn();
+
+  try {
+    await conn.beginTransaction();
+    await conn.query(lockTablesSql);
+    if (request === "hello") {
+      await db.executeTran(conn, insertCarSql);
+      const carInfo = db.extractElem(
+        await db.executeTran(conn, reqLastCarIdSql)
+      );
+      if (carInfo !== undefined && "carId" in carInfo) {
         result.succeeded = true;
-        result.responce = carId[0][0]["carId"];
-        result.sequence = 
+        result.responce = carInfo["carId"];
+        result.sequence = rndSeq;
+      }
+      console.log(rndSeq);
+    } else {
+      if (typeof carId !== "undefined") {
+        if (
+          (await global.existCarTran(conn, carId)) &&
+          (await global.authSequenceTran(conn, carId, sequence))
+        ) {
+          if (request === "next") {
+            /* 状態の確認を行う */
+            result.location = await tran.progressTran(conn, carId);
+            result.succeeded = true;
+          } else if (request === "ping") {
+            /* 状態の確認を行う */
+            await db.executeTran(
+              conn,
+              "UPDATE carTable SET sequence = ?, nowPoint = ?, battery = ?, lastAt = NOW() WHERE carId = UUID_TO_BIN(?, 1)",
+              [rndSeq, location, battery, carId]
+            );
+          } else if (request === "halt") {
+            await db.executeTran(
+              conn,
+              "UPDATE carTable SET status = 5, sequence = ?, nowPoint = ?, battery = ?, lastAt = NOW() WHERE carId = UUID_TO_BIN(?, 1)",
+              [rndSeq, location, battery, carId]
+            );
+          }
+          result.sequence = rndSeq;
+        }
       }
     }
-    */
-    console.log(rndSeq);
-  } else {
-    if (typeof carId === "undefined") {
-      return report(result);
-    }
-    if ((await global.existCar(carId)) === false) {
-      return report(result);
-    }
-    if ((await authSequence(carId, sequence)) === false) {
-      return report(result);
-    }
-    // carTable.sequence と Json で送信された sequence を 比較
-
-    if (request === "next") {
-      result.location = await tran.progressTran(carId);
-      result.succeeded = true;
-    } else if (request === "ping") {
-      await db.execute(
-        "UPDATE carTable SET sequence = ?, nowPoint = ?, battery = ?, lastAt = Now() WHERE carId = UUID_TO_BIN(?, 1)",
-        [rndSeq, location, battery, carId]
-      );
-    } else if (request === "halt") {
-      await db.execute(
-        "UPDATE carTable SET status = unknown, sequence = ?, nowPoint = ?, battery = ?, lastAt = Now() WHERE carId = UUID_TO_BIN(?, 1)",
-        [rndSeq, location, battery, carId]
-      );
-    }
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    console.log(err);
+  } finally {
+    await conn.query(unlockTablesSql);
+    conn.release();
   }
-  result.sequence = rndSeq;
   return report(result);
 }
 
@@ -208,10 +232,6 @@ async function updateCarInfo(
   location: Position
 ): Promise<boolean> {
   return true;
-}
-
-async function authSequence(carId: string, sequence: number): Promise<boolean> {
-  return false;
 }
 
 export default express.Router().post("/sendCarInfo", async (req, res) => {

@@ -24,7 +24,7 @@ const reqOrderStatusSql =
     LOCK IN SHARE MODE";
 const reqCarStatusSql =
   "SELECT status, nowPoint, battery FROM carTable WHERE carId = \
-  (SELECE carId FROM userTable \
+  (SELECT carId FROM userTable \
     WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL) \
     LOCK IN SHARE MODE";
 
@@ -61,8 +61,8 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             result.succeeded = true;
             result.route = orderStatus["route"];
             result.dest = orderStatus["dest"];
-            result.arrival = orderStatus["arrival"];
-            result.finish = orderStatus["finish"];
+            result.arrival = orderStatus["arrival"] ? true : false;
+            result.finish = orderStatus["finish"] ? true : false;
             result.status = carStatus["status"];
             result.nowPoint = carStatus["nowPoint"];
             result.battery = carStatus["battery"];
@@ -77,8 +77,8 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             result.succeeded = true;
             result.route = orderStatus["route"];
             result.dest = orderStatus["dest"];
-            result.arrival = orderStatus["arrival"];
-            result.finish = orderStatus["finish"];
+            result.arrival = orderStatus["arrival"] ? true : false;
+            result.finish = orderStatus["finish"] ? true : false;
           }
         }
       }
