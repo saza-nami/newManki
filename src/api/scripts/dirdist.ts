@@ -22,7 +22,10 @@ function distanceTo(p: Position, q: Position) {
   const w = Math.sqrt(1 - e2 * Math.sin(my) * Math.sin(my));
   const m = (RNeE * (1 - e2)) / Math.pow(w, 3); // 子午線曲率半径
   const n = RNeE / w; // 卯酉線曲率半径
-  return Math.sqrt(Math.pow(dy * m, 2) + Math.pow(dx * n * Math.cos(my), 2));
+  const distance = Math.sqrt(
+    Math.pow(dy * m, 2) + Math.pow(dx * n * Math.cos(my), 2)
+  );
+  return Math.round(distance * 1000) / 1000;
 }
 
 // pからqの角度算出
