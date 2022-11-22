@@ -96,6 +96,24 @@ export async function existCarTran(
   return false;
 }
 
+export async function authSequenceTran(
+  conn: mysql.PoolConnection,
+  carId: string,
+  sequence: number
+): Promise<boolean> {
+  const authSequenceSql =
+    "SELECT sequence FROM carTable WHERE carId = UUID_TO_BIN(?, 1)";
+  const row = db.extractElem(
+    await db.executeTran(conn, authSequenceSql, [carId])
+  );
+  if (row !== undefined && "sequence" in row) {
+    if (row["sequence"] === sequence) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function routeToDest(route: Position[][]): Position[] {
   const result: Position[] = [];
   for (const elem of route) {
