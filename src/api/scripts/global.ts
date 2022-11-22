@@ -148,9 +148,8 @@ export async function executeEnd(
     if (userTable["carId"] !== null) {
       await db.executeTran(conn, updateCarSql, [userTable["carId"]]);
     }
-    return true;
   }
-  return false;
+  return true;
 }
 
 export async function executeTerminate(
@@ -167,12 +166,11 @@ export async function executeTerminate(
   const userTable = db.extractElem(
     await db.executeTran(conn, getCarIdSql, [userId])
   );
+  await db.executeTran(conn, updateUserSql, [userId]);
   if (userTable !== undefined && "carId" in userTable) {
     if (userTable["carId"] !== null) {
-      await db.executeTran(conn, updateUserSql, [userId]);
       await db.executeTran(conn, updateCarSql, [userTable["carId"]]);
     }
-    return true;
   }
-  return false;
+  return true;
 }
