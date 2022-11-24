@@ -1,24 +1,28 @@
 // 状態遷移図の既存ルート選択で呼ばれるAPI
 
 import express from "express";
-import { ApiResult, Position, PassablePoint } from "../types";
+import { ApiResult, PassablePoint } from "../types";
 import * as db from "../database";
 import * as global from "./scripts/global";
 import * as map from "./scripts/map";
 import report from "./_report";
 
-interface RouteNames extends ApiResult {
-  routeNames?: string[];
-  available?: boolean[];
+interface PassableName {
+  routeName: string;
+  available: boolean;
+}
+interface RouteInfo extends ApiResult {
+  passableNames?: PassableName[];
 }
 
-const lockTableSql = "LOCK TABLES userTable WRITE"; // lock table
+const lockTableSql =
+  "LOCK TABLES userTable WRITE, routeTable WRITE, passableTable WRITE"; // lock table
 const unlockTableSql = "UNLOCK TABLES"; // unlock table
 const reqRouteNames = "SELECT routeName, route FROM routeTable";
 
-async function routeNames(userId: string): Promise<RouteNames> {
+async function routeNames(userId: string): Promise<RouteInfo> {
   // return value of API
-  const result: RouteNames = { succeeded: false };
+  const result: RouteInfo = { succeeded: false };
   // check parameter
   if (typeof userId === "undefined") {
     return report(result);
@@ -31,49 +35,41 @@ async function routeNames(userId: string): Promise<RouteNames> {
     await conn.query(lockTableSql);
     if ((await global.existUserTran(conn, userId)) === true) {
       const rows = db.extractElems(await db.executeTran(conn, reqRouteNames));
-      let routeNames = [];
-      let availableFlag: boolean[] = [];
-      let routes: Position[][][] = [];
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
+      const passableNames: PassableName[] = [];
 
-      // Tie routeName to route
       if (rows !== undefined) {
         for (const elem of rows) {
           if ("routeName" in elem && "route" in elem) {
-            routes.push(JSON.parse(elem["route"]));
-            routeNames.push(elem["routeName"].toString());
-          }
-        }
-      }
-
-      let reachable: boolean = true;
-      for (const route in routes) {
-        reachable = true;
-        availableFlag[route] = false;
-        for (const points in routes[route]) {
-          for (let i = 0; i < routes[route][points].length - 1; i++) {
-            if (
-              map.isReachable(
-                routes[route][points][i],
-                routes[route][points][i + 1],
-                passPoints
-              ) === null
-            ) {
-              reachable = false;
-              break;
+            const routeName = elem["routeName"];
+            const route = JSON.parse(elem["route"]);
+            let available: boolean = true;
+            for (const points of route) {
+              available = true;
+              for (let i = 0; i < points.length - 1; i++) {
+                console.log(points[i], points[i + 1]);
+                if (
+                  map.isReachable(points[i], points[i + 1], passPoints) ===
+                  false
+                ) {
+                  console.log(i);
+                  available = false;
+                  break;
+                }
+              }
+              if (!available) {
+                break;
+              }
             }
+            passableNames.push({
+              routeName: routeName,
+              available: available,
+            });
           }
-          if (!reachable) {
-            break;
-          }
-        }
-        if (reachable) {
-          availableFlag[route] = true;
         }
       }
       result.succeeded = true;
-      result.routeNames = routeNames;
-      result.available = availableFlag;
+      result.passableNames = passableNames;
     }
     await conn.commit();
   } catch (err) {

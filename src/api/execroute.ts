@@ -56,7 +56,7 @@ async function reserveRoute(
       for (let i = 0; i < route.length; i++) {
         for (let j = 0; j < route[i].length - 1; j++) {
           if (
-            map.isReachable(route[i][j], route[i][j + 1], passPoints) === null
+            map.isReachable(route[i][j], route[i][j + 1], passPoints) === false
           ) {
             result.message = "Unreachable!";
             return report(result);

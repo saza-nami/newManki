@@ -2,9 +2,9 @@ import mysql from "mysql2/promise";
 import { Position, PassablePoint, AllocatedCar, proceed } from "../../types";
 import * as astar from "./notNotAstar";
 import * as db from "../../database";
-import * as global from "./global";
 import * as map from "./map";
 
+// car allocate
 export async function unallocateCarTran(): Promise<boolean> {
   let allocFlag: boolean = false;
   const conn = await db.createNewConn();
@@ -44,7 +44,6 @@ export async function unallocateCarTran(): Promise<boolean> {
             for (const carId of car) {
               if ("carId" in carId && "nowPoint" in carId) {
                 tmpAstar = await astar.Astar(
-                  conn,
                   carId["nowPoint"],
                   route["route"][0][0],
                   passPoints
@@ -86,6 +85,7 @@ export async function unallocateCarTran(): Promise<boolean> {
   return allocFlag;
 }
 
+// car allocate
 export async function allocatedCarTran(): Promise<boolean> {
   let allocFlag: boolean = false;
   const conn = await db.createNewConn();
@@ -154,7 +154,6 @@ export async function allocatedCarTran(): Promise<boolean> {
         if ("route" in route) {
           console.log(route["route"][0][0]);
           tmpAstar = await astar.Astar(
-            conn,
             realloc.nowPoint,
             route["route"][0][0],
             passPoints
@@ -195,7 +194,6 @@ export async function allocatedCarTran(): Promise<boolean> {
           for (const carId of car) {
             if ("route" in route && "carId" in carId && "nowPoint" in carId) {
               tmpAstar = await astar.Astar(
-                conn,
                 carId["nowPoint"],
                 route["route"][0][0],
                 passPoints
@@ -243,6 +241,7 @@ export async function allocatedCarTran(): Promise<boolean> {
   }
 }
 
+// Monitoring of cars communication cycles
 export async function intervalCarTran(): Promise<boolean> {
   const result = false;
   const intervalSql =
@@ -251,9 +250,13 @@ export async function intervalCarTran(): Promise<boolean> {
   const errorCarsSql =
     "SELECT carId FROM carTable WHERE intevalCount = 3 LOCK IN SHARE MODE";
   const stopCarSql = "UPDATE carTable SET status = 5 WHERE carId = ?";
-  const reqEndRouteUserSql =
-    "SELECT BIN_TO_UUID(userId, 1) FROM userTable \
+  const stopOrderSql =
+    "SELECT orderId FROM userTable \
     WHERE carId = ? AND endAt IS NULL LOCK IN SHARE MODE";
+  const updateOrderSql =
+    "UPDATE orderTable SET nextPoint = NULL, arrival = TRUE, \
+    finish = TRUE, endAt = NOW() WHERE orderId = ?";
+
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
@@ -263,11 +266,11 @@ export async function intervalCarTran(): Promise<boolean> {
       for (const err of cars) {
         if ("carId" in err) {
           await db.executeTran(conn, stopCarSql, [err["carId"]]);
-          const user = db.extractElem(
-            await db.executeTran(conn, reqEndRouteUserSql, err["carId"])
+          const order = db.extractElem(
+            await db.executeTran(conn, stopOrderSql, err["carId"])
           );
-          if (user !== undefined && "userId" in user) {
-            await global.executeEnd(conn, user["userId"]);
+          if (order !== undefined && "userId" in order) {
+            await db.executeTran(conn, updateOrderSql);
           }
         }
       }
@@ -282,6 +285,7 @@ export async function intervalCarTran(): Promise<boolean> {
   return result;
 }
 
+// Advance car
 export async function progressTran(
   connected: mysql.PoolConnection,
   carId: string

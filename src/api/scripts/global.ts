@@ -132,7 +132,7 @@ export async function executeEnd(
     WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
   const updateOrderSql =
     "UPDATE orderTable SET nextPoint = NULL, arrival = TRUE, \
-    finish = TRUE, endAt = now() WHERE orderId = ?";
+    finish = TRUE, endAt = NOW() WHERE orderId = ?";
   const updateCarSql = "UPDATE carTable SET status = 2 WHERE carId = ?";
   const userTable = db.extractElem(
     await db.executeTran(conn, getIdSql, [userId])
