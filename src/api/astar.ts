@@ -47,7 +47,7 @@ async function createRoute(
       if (start !== undefined && end !== undefined) {
         let cur = start;
         for (const next of data) {
-          const part = await astar.Astar(conn, cur, next, passPoints);
+          const part = astar.Astar(cur, next, passPoints);
           console.log(part);
           if (part === null) {
             result.reason =
@@ -62,7 +62,7 @@ async function createRoute(
             cur = next;
           }
         }
-        const last = await astar.Astar(conn, cur, end, passPoints);
+        const last = astar.Astar(cur, end, passPoints);
 
         if (last === null) {
           result.reason =
