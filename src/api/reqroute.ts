@@ -9,9 +9,11 @@ import report from "./_report";
 interface RouteInfo extends ApiResult {
   route?: Position[][];
   dest?: Position[];
+  junkai?: boolean;
 }
 
-const reqRouteSql = "SELECT route, dest from routeTable WHERE routeName = ?";
+const reqRouteSql =
+  "SELECT route, dest, junkai from routeTable WHERE routeName = ?";
 
 async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
   const result: RouteInfo = { succeeded: false };
@@ -30,10 +32,16 @@ async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
       const rows = db.extractElem(
         await db.executeTran(conn, reqRouteSql, [routeName])
       );
-      if (rows !== undefined && "route" in rows && "dest" in rows) {
+      if (
+        rows !== undefined &&
+        "route" in rows &&
+        "dest" in rows &&
+        "junkai" in rows
+      ) {
         result.succeeded = true;
         result.route = JSON.parse(rows["route"]);
         result.dest = JSON.parse(rows["dest"]);
+        result.junkai = rows["junkai"];
       }
     }
   } catch (err) {
