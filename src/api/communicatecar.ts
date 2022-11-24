@@ -23,8 +23,11 @@ const insertCarSql =
 const reqLastCarIdSql =
   "SELECT BIN_TO_UUID(carId, 1) FROM carTable \
   ORDER BY carId DESC, lastAt DESC LIMIT 1";
-const updateCarInfo =
+const updateCarInfoSql =
   "UPDATE carTable SET sequence = ?, nowPoint = ?, battery = ?, \
+  lastAt = NOW() WHERE carId = UUID_TO_BIN(?, 1)";
+const haltCarSql =
+  "UPDATE carTable SET status = 5, sequence = ?, nowPoint = ?, battery = ?, \
   lastAt = NOW() WHERE carId = UUID_TO_BIN(?, 1)";
 
 async function createReply(
@@ -75,18 +78,19 @@ async function createReply(
             result.succeeded = true;
           } else if (request === "ping") {
             /* 車の状態(carTable.status)の確認を行う */
-            await db.executeTran(conn, updateCarInfo, [
+            await db.executeTran(conn, updateCarInfoSql, [
               rndSeq,
               location,
               battery,
               carId,
             ]);
           } else if (request === "halt") {
-            await db.executeTran(
-              conn,
-              "UPDATE carTable SET status = 5, sequence = ?, nowPoint = ?, battery = ?, lastAt = NOW() WHERE carId = UUID_TO_BIN(?, 1)",
-              [rndSeq, location, battery, carId]
-            );
+            await db.executeTran(conn, haltCarSql, [
+              rndSeq,
+              location,
+              battery,
+              carId,
+            ]);
           }
           result.sequence = rndSeq;
         }

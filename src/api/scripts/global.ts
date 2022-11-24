@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
 import * as db from "../../database";
-import { Position } from "../../types";
+import { Position, PassablePoint } from "../../types";
 
 export async function existUser(userId: string): Promise<boolean> {
   // JSON で送られてきた userId が UUID の形式か
@@ -122,6 +122,14 @@ export function routeToDest(route: Position[][]): Position[] {
   result.push(route[route.length - 1].slice(-1)[0]);
   return result;
 }
+
+/*
+export function checkRoute(route: Position[][], passPoints: PassablePoint[]): boolean {
+  const result: boolean = false;
+  await();
+  return result;
+}
+*/
 
 export async function executeEnd(
   conn: mysql.PoolConnection,

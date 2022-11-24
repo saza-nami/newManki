@@ -13,8 +13,8 @@ interface SaveRoute extends ApiResult {
 }
 
 const insertRouteSql =
-  "INSERT INTO routeTable(routeName, route, dest) \
-  VALUES (?, JSON_QUOTE(?), JSON_QUOTE(?))";
+  "INSERT INTO routeTable(routeName, route, dest, junkai) \
+  VALUES (?, JSON_QUOTE(?), JSON_QUOTE(?), ?)";
 
 async function saveRoute(
   userId: string,
@@ -57,7 +57,12 @@ async function saveRoute(
 
       if (reached) {
         const dest = global.routeToDest(route);
-        await db.executeTran(conn, insertRouteSql, [routeName, route, dest]);
+        await db.executeTran(conn, insertRouteSql, [
+          routeName,
+          route,
+          dest,
+          junkai,
+        ]);
         result.succeeded = true;
         result.routeName = routeName;
       }
