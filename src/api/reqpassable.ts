@@ -22,33 +22,43 @@ async function reqPassable(userId: string): Promise<IsPassable> {
   if (typeof userId === "undefined") {
     return report(result);
   }
-  if ((await global.existUser(userId)) === false) {
-    return report(result);
-  }
 
-  // 通行可能領域を取得
-  const passPoints = await db.execute(getPassableSql);
-  const resData: PassableInfo[] = [];
+  const conn = await db.createNewConn();
 
-  if (Array.isArray(passPoints) && Array.isArray(passPoints[0])) {
-    // 取得した通行可能領域分ループ
-    for (const elem of passPoints[0]) {
-      if (
-        "passableId" in elem &&
-        "radius" in elem &&
-        "lat" in elem &&
-        "lng" in elem
-      ) {
-        resData.push({
-          passableId: Number(elem["passableId"]),
-          position: { lat: Number(elem["lat"]), lng: Number(elem["lng"]) },
-          radius: Number(elem["radius"]),
-        });
+  try {
+    await conn.beginTransaction();
+    // 通行可能領域を取得
+    const passPoints = db.extractElems(
+      await db.executeTran(conn, getPassableSql)
+    );
+    const resData: PassableInfo[] = [];
+    if ((await global.existUser(userId)) === true) {
+      if (passPoints !== undefined) {
+        // 取得した通行可能領域分ループ
+        for (const elem of passPoints) {
+          if (
+            "passableId" in elem &&
+            "radius" in elem &&
+            "lat" in elem &&
+            "lng" in elem
+          ) {
+            resData.push({
+              passableId: Number(elem["passableId"]),
+              position: { lat: Number(elem["lat"]), lng: Number(elem["lng"]) },
+              radius: Number(elem["radius"]),
+            });
+          }
+        }
       }
+      result.succeeded = true;
+      result.passableInfo = resData;
     }
+  } catch (err) {
+    await conn.rollback();
+    console.log(err);
+  } finally {
+    conn.release();
   }
-  result.succeeded = true;
-  result.passableInfo = resData;
   return report(result);
 }
 

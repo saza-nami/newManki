@@ -4,11 +4,11 @@ import * as map from "./map";
 import * as dirdist from "./dirdist";
 
 /** 経路探索 */
-async function Astar(
+function Astar(
   start: Position,
   goal: Position,
   passPoints: PassablePoint[]
-): Promise<Position[] | null> {
+): Position[] | null {
   let goalNode: Node = {
     position: goal,
     gCost: Number.MAX_VALUE,
@@ -88,7 +88,7 @@ async function Astar(
     if (childNode.parent === null) break;
     childNode = nodes[childNode.parent];
   }
-  return await optimization(result, passPoints);
+  return optimization(result, passPoints);
 }
 
 /** 地点群から未評価最小コスト地点の算出 */
@@ -108,10 +108,7 @@ function getMinIndex(nodes: Node[]): number {
 }
 
 /** 最適経路直線化 */
-async function optimization(
-  p: Position[],
-  passPoints: PassablePoint[]
-): Promise<Position[]> {
+function optimization(p: Position[], passPoints: PassablePoint[]): Position[] {
   const data: Position[] = [];
   data.push(p[0]);
   let i = 0;
