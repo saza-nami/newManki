@@ -7,6 +7,8 @@ import * as db from "../../database";
 const distance = 1;
 /** 通行可能判定を行う地点間の間隔 dt[m] */
 const dt = distance / 10;
+/** 通行可能領域との余裕 */
+const margin = 0.2;
 
 /* databaseから通行可能領域点群を取得 */
 async function getPassPos(
@@ -35,11 +37,12 @@ async function getPassPos(
 function reachIn(
   p: Position,
   q: Position,
-  passPoints: PassablePoint[]
+  passPoints: PassablePoint[],
+  marginFlag?: boolean
 ): boolean {
   const dis = dirdist.distanceTo(p, q);
   if (dis > distance && !approx(dis, distance)) return false;
-  if (!isReachable(p, q, passPoints)) return false;
+  if (!isReachable(p, q, passPoints, marginFlag)) return false;
   return true;
 }
 
@@ -47,24 +50,29 @@ function reachIn(
 function isReachable(
   p: Position,
   q: Position,
-  passPoints: PassablePoint[]
+  passPoints: PassablePoint[],
+  marginFlag?: boolean
 ): boolean {
   const interval = dt / Math.round(dirdist.distanceTo(p, q));
   const direction = dirdist.direction(p, q);
   let middle: Position = p;
   for (let t = 0; t <= 1; t += interval) {
     middle = dirdist.moveBy(middle, dt, direction);
-    if (!isPassable(middle, passPoints)) return false;
+    if (!isPassable(middle, passPoints, marginFlag)) return false;
   }
   return true;
 }
 
 /** 通行可能判定 */
-function isPassable(p: Position, passPoints: PassablePoint[]): boolean {
+function isPassable(
+  p: Position,
+  passPoints: PassablePoint[],
+  marginFlag?: boolean
+): boolean {
   for (const elem of passPoints) {
-    if (elem.radius > dirdist.distanceTo(p, elem.position)) {
-      return true;
-    }
+    const distance = dirdist.distanceTo(p, elem.position);
+    const radius = marginFlag ? distance + margin : distance;
+    if (elem.radius > radius) return true;
   }
   return false;
 }
