@@ -12,7 +12,7 @@ import ProceedRoute from "./proceedroute";
 import ReqPassable from "./reqpassable";
 import PassPoint from "./passpoint";
 import CommunicateCar from "./communicatecar";
-import GetPassableAdmin from "./getPassableAdmin";
+import GetPassable from "./admin/getpassable";
 
 export default [
   CreateUserRouter,
@@ -29,5 +29,5 @@ export default [
   ReqPassable,
   PassPoint,
   CommunicateCar,
-  GetPassableAdmin,
+  GetPassable,
 ];

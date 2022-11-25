@@ -2,6 +2,7 @@ import mysql from "mysql2/promise";
 import * as db from "../../database";
 import { Position, PassablePoint } from "../../types";
 
+/*
 export async function existUser(userId: string): Promise<boolean> {
   // JSON で送られてきた userId が UUID の形式か
   const isUuidSql = "SELECT IS_UUID(?) as UUID";
@@ -21,6 +22,7 @@ export async function existUser(userId: string): Promise<boolean> {
   }
   return false;
 }
+*/
 
 export async function existUserTran(
   connected: mysql.PoolConnection,
@@ -51,6 +53,7 @@ export async function existUserTran(
   return false;
 }
 
+/*
 export async function existCar(carId: string): Promise<boolean> {
   // JSON で送られてきた carId が UUID の形式か
   const isUuidSql = "SELECT IS_UUID(?) as UUID";
@@ -70,6 +73,7 @@ export async function existCar(carId: string): Promise<boolean> {
   }
   return false;
 }
+*/
 
 export async function existCarTran(
   connected: mysql.PoolConnection,
@@ -122,14 +126,6 @@ export function routeToDest(route: Position[][]): Position[] {
   result.push(route[route.length - 1].slice(-1)[0]);
   return result;
 }
-
-/*
-export function checkRoute(route: Position[][], passPoints: PassablePoint[]): boolean {
-  const result: boolean = false;
-  await();
-  return result;
-}
-*/
 
 export async function executeEnd(
   conn: mysql.PoolConnection,

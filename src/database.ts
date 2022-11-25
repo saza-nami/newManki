@@ -17,6 +17,7 @@ const CONNECTIONPOOL_OPTIONS: mysql.PoolOptions = {
 
 const createPool = mysql.createPool(CONNECTIONPOOL_OPTIONS);
 
+// もはや使用されていない execute
 async function execute<
   T extends
     | mysql.RowDataPacket[][]
@@ -71,6 +72,56 @@ async function execute(
   await conn.end();
   return result;
 }
+
+async function executeTran<
+  T extends
+    | mysql.RowDataPacket[][]
+    | mysql.RowDataPacket[]
+    | mysql.OkPacket
+    | mysql.OkPacket[]
+    | mysql.ResultSetHeader
+>(
+  connected: mysql.PoolConnection,
+  sql: string
+): Promise<[T, mysql.FieldPacket[]]>;
+
+async function executeTran<
+  T extends
+    | mysql.RowDataPacket[][]
+    | mysql.RowDataPacket[]
+    | mysql.OkPacket
+    | mysql.OkPacket[]
+    | mysql.ResultSetHeader
+>(
+  connected: mysql.PoolConnection,
+  sql: string,
+  values: any | any[] | { [param: string]: any }
+): Promise<[T, mysql.FieldPacket[]]>;
+
+async function executeTran<
+  T extends
+    | mysql.RowDataPacket[][]
+    | mysql.RowDataPacket[]
+    | mysql.OkPacket
+    | mysql.OkPacket[]
+    | mysql.ResultSetHeader
+>(
+  connected: mysql.PoolConnection,
+  options: mysql.QueryOptions
+): Promise<[T, mysql.FieldPacket[]]>;
+
+async function executeTran<
+  T extends
+    | mysql.RowDataPacket[][]
+    | mysql.RowDataPacket[]
+    | mysql.OkPacket
+    | mysql.OkPacket[]
+    | mysql.ResultSetHeader
+>(
+  connected: mysql.PoolConnection,
+  options: mysql.QueryOptions,
+  values: any | any[] | { [param: string]: any }
+): Promise<[T, mysql.FieldPacket[]]>;
 
 // Available only during transaction.
 async function executeTran(
@@ -136,4 +187,4 @@ async function createNewConn(): Promise<mysql.PoolConnection> {
   return conn;
 }
 
-export { execute, executeTran, extractElem, extractElems, createNewConn };
+export { executeTran, extractElem, extractElems, createNewConn };

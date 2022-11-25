@@ -59,9 +59,9 @@ async function createReply(
         const carInfo = db.extractElem(
           await db.executeTran(conn, reqLastCarIdSql)
         );
-        if (carInfo !== undefined && "carId" in carInfo) {
+        if (carInfo !== undefined && "BIN_TO_UUID(carId, 1)" in carInfo) {
           result.succeeded = true;
-          result.responce = carInfo["carId"];
+          result.responce = carInfo["BIN_TO_UUID(carId, 1)"];
           result.sequence = rndSeq;
         }
         console.log(rndSeq);
