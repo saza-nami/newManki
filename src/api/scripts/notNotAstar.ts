@@ -31,6 +31,7 @@ function Astar(
     if (minIndex != -1) {
       nodes[minIndex].comfirm = true;
       const newNodes = map.addNode(nodes[minIndex].position);
+      const nodesLength = nodes.length;
       for (const n of newNodes) {
         let flag = true;
         if (map.reachIn(nodes[minIndex].position, n, passPoints, true)) {
@@ -58,11 +59,8 @@ function Astar(
             };
           } else {
             // 評価済み地点重複確認
-            for (let i = 0; i < nodes.length; i++) {
-              if (
-                map.approx(node.position.lat, nodes[i].position.lat) &&
-                map.approx(node.position.lng, nodes[i].position.lng)
-              ) {
+            for (let i = 0; i < nodesLength; i++) {
+              if (map.approx(node.position, nodes[i].position)) {
                 if (node.gCost < nodes[i].gCost) {
                   if (nodes[i].comfirm) node.comfirm = true;
                   nodes[i] = node;
