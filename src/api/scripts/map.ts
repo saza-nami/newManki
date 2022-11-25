@@ -1,14 +1,17 @@
-import mysql from "mysql2/promise";
 import { PassablePoint, Position } from "../../types";
-import * as dirdist from "./dirdist";
+
 import * as db from "../../database";
+import mysql from "mysql2/promise";
+import * as dirdist from "./dirdist";
 
 /** 地点探索距離[m] */
-const distance = 1;
+const stanDistance = 1;
 /** 通行可能判定を行う地点間の間隔 dt[m] */
-const dt = distance / 10;
-/** 通行可能領域との余裕 */
-const margin = 0.2;
+const dt = stanDistance / 10;
+/** 通行可能領域との余裕[m] */
+const margin = 0.3;
+/** 地点生成分解能 */
+const resolution = 18;
 
 /* 経路の実行可能判定 */
 function checkRoute(route: Position[][], passPoints: PassablePoint[]) {
@@ -52,6 +55,22 @@ async function getPassPos(
   return result;
 }
 
+/** 評価候補のノード群を生成 */
+function addNode(p: Position): Position[] {
+  const nodes: Position[] = [];
+  for (let i = 0; i < 360; i += 360 / resolution) {
+    nodes.push(dirdist.moveBy(p, stanDistance, i));
+  }
+  return nodes;
+}
+
+// 同一地点判定
+function approx(A: Position, B: Position): boolean {
+  const distance = dirdist.distanceTo(A, B);
+  if (distance < stanDistance / 2) return true;
+  return false;
+}
+
 /** distanceの届く範囲内判定 */
 function reachIn(
   p: Position,
@@ -59,8 +78,8 @@ function reachIn(
   passPoints: PassablePoint[],
   marginFlag?: boolean
 ): boolean {
-  const dis = dirdist.distanceTo(p, q);
-  if (dis > distance && !approx(dis, distance)) return false;
+  const distance = dirdist.distanceTo(p, q);
+  if (distance > stanDistance) return false;
   if (!isReachable(p, q, passPoints, marginFlag)) return false;
   return true;
 }
@@ -96,30 +115,4 @@ function isPassable(
   return false;
 }
 
-/** 評価候補のノード群を生成 */
-function addNode(p: Position): Position[] {
-  const nodes: Position[] = [];
-  for (let i = 0; i < 360; i += 360 / 18) {
-    nodes.push(dirdist.moveBy(p, distance, i));
-  }
-  return nodes;
-}
-
-// 近似値判定
-function approx(A: number, B: number): boolean {
-  const n = Math.abs(A - B);
-  // 約0.5mの誤差許容
-  if (n < 0.000005) return true;
-  return false;
-}
-
-export {
-  addNode,
-  approx,
-  checkRoute,
-  isPassable,
-  isReachable,
-  reachIn,
-  getPassPos,
-  distance,
-};
+export { getPassPos, addNode, approx, reachIn, isReachable, isPassable };
