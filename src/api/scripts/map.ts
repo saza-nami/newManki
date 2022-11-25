@@ -10,6 +10,25 @@ const dt = distance / 10;
 /** 通行可能領域との余裕 */
 const margin = 0.2;
 
+/* 経路の実行可能判定 */
+function checkRoute(route: Position[][], passPoints: PassablePoint[]) {
+  let result: boolean = true;
+  for (let i = 0; i < route.length; i++) {
+    for (let j = 0; j < route[i].length - 1; j++) {
+      if (isReachable(route[i][j], route[i][j + 1], passPoints) === false) {
+        result = false;
+      }
+      if (!result) {
+        break;
+      }
+    }
+    if (!result) {
+      break;
+    }
+  }
+  return result;
+}
+
 /* databaseから通行可能領域点群を取得 */
 async function getPassPos(
   connected: mysql.PoolConnection
@@ -97,6 +116,7 @@ function approx(A: number, B: number): boolean {
 export {
   addNode,
   approx,
+  checkRoute,
   isPassable,
   isReachable,
   reachIn,

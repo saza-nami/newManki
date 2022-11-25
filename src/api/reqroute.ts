@@ -41,7 +41,7 @@ async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
         result.succeeded = true;
         result.route = JSON.parse(rows["route"]);
         result.dest = JSON.parse(rows["dest"]);
-        result.junkai = rows["junkai"];
+        result.junkai = rows["junkai"] ? true : false;
       }
     }
   } catch (err) {

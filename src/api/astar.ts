@@ -73,8 +73,11 @@ async function createRoute(
           }
         }
       }
-      result.succeeded = true;
-      result.route = resultNodes;
+      let test: Position[][] = [resultNodes];
+      if (map.checkRoute(test, passPoints)) {
+        result.succeeded = true;
+        result.route = resultNodes;
+      }
     }
     await conn.commit();
   } catch (err) {
