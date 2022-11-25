@@ -115,4 +115,12 @@ function isPassable(
   return false;
 }
 
-export { getPassPos, addNode, approx, reachIn, isReachable, isPassable };
+export {
+  checkRoute,
+  getPassPos,
+  addNode,
+  approx,
+  reachIn,
+  isReachable,
+  isPassable,
+};
