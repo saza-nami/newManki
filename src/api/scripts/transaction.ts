@@ -12,12 +12,13 @@ export async function unallocateCarTran(): Promise<boolean> {
     await conn.beginTransaction();
     const passPoints: PassablePoint[] = await map.getPassPos(conn);
     let tmpAstar: Position[] | null = [];
-    // 命令受理済みで車未割当のユーザの orderId を取得
+    // 命令受理済みで車未割当かつ終了していないユーザの orderId を取得
     const order = db.extractElems(
       await db.executeTran(
         conn,
         "SELECT orderId FROM userTable \
-        WHERE carId IS NULL AND orderId IS NOT NULL LOCK IN SHARE MODE"
+        WHERE carId IS NULL AND orderId IS NOT NULL \
+        AND endAt IS NULL LOCK IN SHARE MODE"
       )
     );
     const car = db.extractElems(
@@ -43,7 +44,7 @@ export async function unallocateCarTran(): Promise<boolean> {
             // 空いている車分ループ
             for (const carId of car) {
               if ("carId" in carId && "nowPoint" in carId) {
-                tmpAstar = await astar.Astar(
+                tmpAstar = astar.Astar(
                   carId["nowPoint"],
                   route["route"][0][0],
                   passPoints
@@ -98,7 +99,8 @@ export async function allocatedCarTran(): Promise<boolean> {
       await db.executeTran(
         conn,
         "SELECT carId, orderId FROM userTable \
-        WHERE carId IS NOT NULL AND orderId IS NOT NULL LOCK IN SHARE MODE"
+        WHERE carId IS NOT NULL AND orderId IS NOT NULL \
+        AND endAt IS NULL LOCK IN SHARE MODE"
       )
     );
     const order: AllocatedCar[] = []; // 車を割り当てなければいけない命令群
@@ -153,7 +155,7 @@ export async function allocatedCarTran(): Promise<boolean> {
       if (route !== undefined) {
         if ("route" in route) {
           console.log(route["route"][0][0]);
-          tmpAstar = await astar.Astar(
+          tmpAstar = astar.Astar(
             realloc.nowPoint,
             route["route"][0][0],
             passPoints
@@ -193,7 +195,7 @@ export async function allocatedCarTran(): Promise<boolean> {
         if (route !== undefined && car !== undefined) {
           for (const carId of car) {
             if ("route" in route && "carId" in carId && "nowPoint" in carId) {
-              tmpAstar = await astar.Astar(
+              tmpAstar = astar.Astar(
                 carId["nowPoint"],
                 route["route"][0][0],
                 passPoints
@@ -275,6 +277,24 @@ export async function intervalCarTran(): Promise<boolean> {
         }
       }
     }
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    console.log(err);
+  } finally {
+    conn.release();
+  }
+  return result;
+}
+
+// Monitoring of order activity
+export async function monitorOrderTran(): Promise<number[]> {
+  const result: number[] = [];
+  const conn = await db.createNewConn();
+  const limitTimer = "24:00:00";
+
+  try {
+    await conn.beginTransaction();
     await conn.commit();
   } catch (err) {
     await conn.rollback();

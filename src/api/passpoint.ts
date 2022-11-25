@@ -9,7 +9,7 @@ const addPassableSql =
   "INSERT INTO passableTable(radius, lat, lng) VALUES(?, ?, ?)";
 
 async function addPassable(passPoints: PassablePoint[]): Promise<ApiResult> {
-  const result: ApiResult = { succeeded: true };
+  const result: ApiResult = { succeeded: false };
   // check input
   if (typeof passPoints === "undefined") {
     return report(result);
@@ -20,16 +20,18 @@ async function addPassable(passPoints: PassablePoint[]): Promise<ApiResult> {
   try {
     await conn.beginTransaction();
     for (const i in add) {
-      console.log(add[i]);
+      console.log(i);
       await db.executeTran(conn, addPassableSql, [
         add[i].radius,
         add[i].position.lat,
         add[i].position.lng,
       ]);
     }
+    result.succeeded = true;
     await conn.commit();
   } catch (err) {
     await conn.rollback();
+    console.log(err);
   } finally {
     conn.release();
   }

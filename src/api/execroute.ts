@@ -53,59 +53,59 @@ async function reserveRoute(
     if ((await global.existUserTran(conn, userId)) === true) {
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
       // check route in passable area
-      for (let i = 0; i < route.length; i++) {
-        for (let j = 0; j < route[i].length - 1; j++) {
-          if (
-            map.isReachable(route[i][j], route[i][j + 1], passPoints) === false
-          ) {
-            result.message = "Unreachable!";
-            return report(result);
-          }
-        }
-      }
-
-      // insert route in the database
-      const dest = global.routeToDest(route);
-      const existOrder = db.extractElem(
-        await db.executeTran(conn, reqUsersOrderSql, [userId])
-      );
-      if (existOrder !== undefined && "orderId" in existOrder) {
-        if (existOrder["orderId"] === null) {
-          await db.executeTran(conn, insertOrderSql, [route, dest, junkai]);
-          const createdOrderId = db.extractElem(
-            await db.executeTran(conn, reqLastOrderIdSql)
-          );
-          if (createdOrderId !== undefined && "orderId" in createdOrderId) {
-            await db.executeTran(conn, updateUserInfoSql, [
-              createdOrderId["orderId"],
-              userId,
-            ]);
-          }
-          result.succeeded = true;
-        } else {
-          const endAt = db.extractElem(
-            await db.executeTran(conn, completedOrderSql, [
-              existOrder["orderId"],
-            ])
-          );
-          if (endAt !== undefined && "endAt" in endAt) {
-            if (endAt["endAt"] !== null) {
-              await db.executeTran(conn, insertOrderSql, [route, dest, junkai]);
-              const createdOrderId = db.extractElem(
-                await db.executeTran(conn, reqLastOrderIdSql)
-              );
-              if (createdOrderId !== undefined && "orderId" in createdOrderId) {
-                await db.executeTran(conn, updateUserInfoSql, [
-                  createdOrderId["orderId"],
-                  userId,
+      if (map.checkRoute(route, passPoints) === true) {
+        // insert route in the database
+        const dest = global.routeToDest(route);
+        const existOrder = db.extractElem(
+          await db.executeTran(conn, reqUsersOrderSql, [userId])
+        );
+        if (existOrder !== undefined && "orderId" in existOrder) {
+          if (existOrder["orderId"] === null) {
+            await db.executeTran(conn, insertOrderSql, [route, dest, junkai]);
+            const createdOrderId = db.extractElem(
+              await db.executeTran(conn, reqLastOrderIdSql)
+            );
+            if (createdOrderId !== undefined && "orderId" in createdOrderId) {
+              await db.executeTran(conn, updateUserInfoSql, [
+                createdOrderId["orderId"],
+                userId,
+              ]);
+            }
+            result.succeeded = true;
+          } else {
+            const endAt = db.extractElem(
+              await db.executeTran(conn, completedOrderSql, [
+                existOrder["orderId"],
+              ])
+            );
+            if (endAt !== undefined && "endAt" in endAt) {
+              if (endAt["endAt"] !== null) {
+                await db.executeTran(conn, insertOrderSql, [
+                  route,
+                  dest,
+                  junkai,
                 ]);
+                const createdOrderId = db.extractElem(
+                  await db.executeTran(conn, reqLastOrderIdSql)
+                );
+                if (
+                  createdOrderId !== undefined &&
+                  "orderId" in createdOrderId
+                ) {
+                  await db.executeTran(conn, updateUserInfoSql, [
+                    createdOrderId["orderId"],
+                    userId,
+                  ]);
+                }
+                result.succeeded = true;
+              } else {
+                result.message = "Reject new order!";
               }
-              result.succeeded = true;
-            } else {
-              result.message = "Reject new order!";
             }
           }
         }
+      } else {
+        result.message = "Unreachable!";
       }
     }
     await conn.commit();

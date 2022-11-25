@@ -3,7 +3,6 @@
 import express from "express";
 import { ApiResult, PassablePoint } from "../types";
 import * as db from "../database";
-import * as global from "./scripts/global";
 import report from "./_report";
 
 interface IsPassable extends ApiResult {
@@ -32,7 +31,9 @@ async function reqPassable(userId: string): Promise<IsPassable> {
       await db.executeTran(conn, getPassableSql)
     );
     const resData: PassableInfo[] = [];
-    if ((await global.existUser(userId)) === true) {
+    // if ((await global.existUser(userId)) === true) {
+    if (true) {
+      // FOR DEBUG
       if (passPoints !== undefined) {
         // 取得した通行可能領域分ループ
         for (const elem of passPoints) {
