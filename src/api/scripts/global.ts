@@ -30,14 +30,14 @@ export async function existUserTran(
 ): Promise<boolean> {
   // JSON で送られてきた userId が UUID の形式か
   const isUuidSql = "SELECT IS_UUID(?) as UUID";
+  // userId が存在するか
+  const existUserSql =
+    "SELECT COUNT(*) FROM userTable \
+    WHERE userId = UUID_TO_BIN(?, 1) AND endAt IS NULL \
+    LOCK IN SHARE MODE";
   const bin = db.extractElem(
     await db.executeTran(connected, isUuidSql, [userId])
   );
-  // userId が存在するか
-  const existUserSql =
-    "SELECT COUNT(*) from userTable \
-    WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL \
-    LOCK IN SHARE MODE";
   if (bin !== undefined && "UUID" in bin && bin["UUID"] === 1) {
     const existUser = db.extractElem(
       await db.executeTran(connected, existUserSql, [userId])
@@ -136,7 +136,7 @@ export async function executeEnd(
     WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
   const updateOrderSql =
     "UPDATE orderTable SET nextPoint = NULL, arrival = TRUE, \
-    finish = TRUE, endAt = NOW() WHERE orderId = ?";
+    finish = TRUE, endAt = NOW() WHERE orderId = ? AND endAt IS NULL";
   const updateCarSql = "UPDATE carTable SET status = 2 WHERE carId = ?";
   const userTable = db.extractElem(
     await db.executeTran(conn, getIdSql, [userId])
@@ -165,7 +165,8 @@ export async function executeTerminate(
     "SELECT carId FROM userTable \
     WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
   const updateUserSql =
-    "UPDATE userTable SET endAt = now() WHERE userId = UUID_TO_BIN(?, 1)";
+    "UPDATE userTable SET endAt = NOW() \
+    WHERE userId = UUID_TO_BIN(?, 1) AND endAt IS NULL";
   const updateCarSql = "UPDATE carTable SET status = 1 WHERE carId = ?";
   const userTable = db.extractElem(
     await db.executeTran(conn, getCarIdSql, [userId])
