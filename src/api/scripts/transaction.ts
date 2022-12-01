@@ -287,6 +287,48 @@ export async function intervalCarTran(): Promise<boolean> {
   return result;
 }
 
+export async function intervalUserTran(): Promise<boolean> {
+  const getUserSql =
+    "SELECT userId, orderId, carId FROM userTable \
+    WHERE startAt <= SUBTIME(NOW(), '12:00:00') AND endAt IS NULL \
+    LOCK IN SHARE MODE";
+  const freeOrderSql =
+    "UPDATE orderTable SET nextPoint = NULL, arrival = TRUE, \
+    finish = TRUE, endAt = NOW() WHERE orderId = ?";
+  const freeCarSql =
+    "UPDATE carTable SET status = 1 \
+    WHERE carId = ? AND (status != 5 OR status != 6)";
+  const freeUserSql = "UPDATE userTable SET endAt = NOW() WHERE userId = ?";
+  const conn = await db.createNewConn();
+
+  try {
+    await conn.beginTransaction();
+    const userTable = db.extractElems(await db.executeTran(conn, getUserSql));
+    if (userTable !== undefined) {
+      for (const elem of userTable) {
+        if ("userId" in elem && "orderId" in elem && "carId" in elem) {
+          if (elem["orderId"] !== null) {
+            await db.executeTran(conn, freeOrderSql, [elem["orderId"]]);
+          }
+          if (elem["carId"] !== null) {
+            await db.executeTran(conn, freeCarSql, [elem["carId"]]);
+          }
+          if (elem["userId"] !== null) {
+            await db.executeTran(conn, freeUserSql, [elem["userId"]]);
+          }
+        }
+      }
+    }
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    console.log(err);
+  } finally {
+    conn.release();
+  }
+  return true;
+}
+
 // Monitoring of order activity
 export async function monitorOrderTran(): Promise<number[]> {
   const result: number[] = [];

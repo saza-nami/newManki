@@ -64,7 +64,6 @@ async function createReply(
           result.responce = carInfo["BIN_TO_UUID(carId, 1)"];
           result.sequence = rndSeq;
         }
-        console.log(rndSeq);
       }
     } else {
       if (typeof carId !== "undefined" && typeof sequence !== "undefined") {
@@ -131,11 +130,14 @@ export default express.Router().post("/sendCarInfo", async (req, res) => {
           lastLog.date.unshift(date);
           lastLog.ipAddress.unshift(ip);
           return res.json({ succeeded: false });
+        } else {
+          lastLog.date[lastLog.ipAddress.indexOf(req.ip)] = Date.now();
         }
+      } else {
+        // add new user's log
+        lastLog.date.push(Date.now());
+        lastLog.ipAddress.push(req.ip);
       }
-      // add new user log
-      lastLog.date.push(Date.now());
-      lastLog.ipAddress.push(req.ip);
     }
 
     res.json(

@@ -16,7 +16,7 @@ interface RouteInfo extends ApiResult {
 }
 
 const lockTableSql =
-  "LOCK TABLES userTable WRITE, routeTable WRITE, passableTable WRITE"; // lock table
+  "LOCK TABLES userTable READ, routeTable READ, passableTable WRITE"; // lock table
 const unlockTableSql = "UNLOCK TABLES"; // unlock table
 const reqRouteNames = "SELECT routeName, route FROM routeTable";
 

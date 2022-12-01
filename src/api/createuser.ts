@@ -9,7 +9,8 @@ interface CreateUserResult extends ApiResult {
   userId?: string; // UUID
 }
 
-const maxUsers = 100; // FIXME, available users of system
+// FIXME, available users of system
+const maxUsers = 100;
 // dos attack countermeasures proc
 let lastLog: Access = { date: [0], ipAddress: ["anyonyomarubobo"] };
 
@@ -17,7 +18,6 @@ const lockTableSql = "LOCK TABLES userTable WRITE"; // lock table
 const unlockTableSql = "UNLOCK TABLES"; // unlock table
 const countUsersSql = "SELECT COUNT(*) FROM userTable WHERE endAt IS NULL";
 const insertUserSql = "INSERT INTO userTable() VALUES ()";
-// req new user's userId
 const reqLastUserIdSql =
   "SELECT BIN_TO_UUID(userId, 1) FROM userTable \
   ORDER BY userId DESC, startAt DESC LIMIT 1";
@@ -26,8 +26,7 @@ async function createUserTran(): Promise<CreateUserResult> {
   // return value of API
   const result: CreateUserResult = { succeeded: false };
 
-  const conn = await db.createNewConn(); // database connection
-  // begin transaction
+  const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
     await conn.query(lockTableSql); // Use query!
@@ -61,7 +60,6 @@ async function createUserTran(): Promise<CreateUserResult> {
   return report(result);
 }
 
-/* lastLogが限界を迎えないような実装にするべき */
 export default express.Router().get("/createUser", async (req, res) => {
   try {
     // dos attack countermeasures
@@ -85,12 +83,14 @@ export default express.Router().get("/createUser", async (req, res) => {
         lastLog.date.unshift(date);
         lastLog.ipAddress.unshift(ip);
         return res.json({ succeeded: false });
+      } else {
+        lastLog.date[lastLog.ipAddress.indexOf(req.ip)] = Date.now();
       }
+    } else {
+      // add new user's log
+      lastLog.date.push(Date.now());
+      lastLog.ipAddress.push(req.ip);
     }
-    // add new user log
-    lastLog.date.push(Date.now());
-    lastLog.ipAddress.push(req.ip);
-
     // main process
     res.json(await createUserTran());
   } catch (err) {
