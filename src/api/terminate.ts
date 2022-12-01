@@ -22,6 +22,7 @@ async function terminate(userId: string): Promise<ApiResult> {
       await global.executeTerminate(conn, userId);
       result.succeeded = true;
     }
+    await conn.commit();
   } catch (err) {
     await conn.rollback();
     console.log(err);

@@ -7,7 +7,7 @@ import * as global from "./scripts/global";
 import report from "./_report";
 
 const userStatusSql =
-  "SELECT carId orderId, endAt FROM userTable \
+  "SELECT carId, orderId FROM userTable \
   WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
 const completedOrderSql =
   "SELECT endAt FROM orderTable WEHRE orderId = ? LOCK IN SHARE MODE";
@@ -18,22 +18,19 @@ const reqCarStatus =
 async function isAcceptableTran(userId: string): Promise<ApiResult> {
   // return value of API
   const result: ApiResult = { succeeded: false };
-  // check parameter
   if (typeof userId === "undefined") {
     return report(result);
   }
 
-  const conn = await db.createNewConn(); // database connection
-  // bedin transaction
+  const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    // check exist user
     if ((await global.existUserTran(conn, userId)) === true) {
       const isOrder = db.extractElem(
         await db.executeTran(conn, userStatusSql, [userId])
       );
-      if (isOrder !== undefined && "orderId" in isOrder && "endAt" in isOrder) {
-        if (isOrder["orderId"] === null && isOrder["endAt"] == null) {
+      if (isOrder !== undefined && "orderId" in isOrder) {
+        if (isOrder["orderId"] === null) {
           result.succeeded = true;
         } else {
           if ("carId" in isOrder && isOrder["carId"] !== undefined) {
