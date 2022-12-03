@@ -91,7 +91,9 @@ function isReachable(
   passPoints: PassablePoint[],
   marginFlag?: boolean
 ): boolean {
-  const interval = dt / Math.round(dirdist.distanceTo(p, q));
+  if (approx(p, q)) isPassable(p, passPoints);
+  const distance = dirdist.distanceTo(p, q);
+  const interval = dt / distance;
   const direction = dirdist.direction(p, q);
   let middle: Position = p;
   for (let t = 0; t <= 1; t += interval) {
