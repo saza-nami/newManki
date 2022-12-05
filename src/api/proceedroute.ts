@@ -33,7 +33,13 @@ async function proceedRoute(userId: string): Promise<ApiResult> {
       const proceed = db.extractElem(
         await db.executeTran(conn, reqUserInfoSql, [userId])
       );
-      if (proceed !== undefined && "carId" in proceed && "orderId" in proceed) {
+      if (
+        proceed !== undefined &&
+        "carId" in proceed &&
+        proceed["carId"] !== undefined &&
+        "orderId" in proceed &&
+        proceed["orderId"] !== undefined
+      ) {
         const order = db.extractElem(
           await db.executeTran(conn, reqOrdersFlagsSql, [proceed["orderId"]])
         );

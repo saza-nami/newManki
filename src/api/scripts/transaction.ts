@@ -31,7 +31,7 @@ export async function unallocateCarTran(): Promise<boolean> {
     if (order !== undefined && car !== undefined) {
       // 未割当の命令分ループ
       for (const orderId of order) {
-        if ("orderId" in orderId) {
+        if ("orderId" in orderId && orderId["orderId"] !== undefined) {
           const route = db.extractElem(
             await db.executeTran(
               conn,
@@ -231,9 +231,7 @@ export async function allocatedCarTran(): Promise<boolean> {
         }
       }
     }
-
     await conn.commit();
-    return allocFlag;
   } catch (err) {
     await conn.rollback();
     console.log(err);
@@ -241,6 +239,7 @@ export async function allocatedCarTran(): Promise<boolean> {
   } finally {
     conn.release();
   }
+  return allocFlag;
 }
 
 // Monitoring of cars communication cycles

@@ -10,7 +10,7 @@ const userStatusSql =
   "SELECT carId, orderId FROM userTable \
   WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
 const completedOrderSql =
-  "SELECT endAt FROM orderTable WEHRE orderId = ? LOCK IN SHARE MODE";
+  "SELECT endAt FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE";
 const reqCarStatus =
   "SELECT status FROM carTable \
   WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";

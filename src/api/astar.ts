@@ -13,7 +13,7 @@ interface CreateRoute extends ApiResult {
   reason?: string;
 }
 
-const lockTablesSql = "LOCK TABLES passableTable READ, userTable READ";
+const lockTablesSql = "LOCK TABLES passableTable WRITE, userTable WRITE";
 const unlockTablesSql = "UNLOCK TABLES";
 
 async function createRoute(
@@ -22,20 +22,23 @@ async function createRoute(
 ): Promise<CreateRoute> {
   // return values of API
   const result: CreateRoute = { succeeded: false };
+  let passPoints: PassablePoint[] = [];
+  console.log(userId, target);
   // check input
   if (typeof userId === "undefined" || typeof target === "undefined") {
     return report(result);
   }
   if (target.length < 2) {
+    console.log("targetlength");
     return report(result);
   }
 
   const conn = await db.createNewConn(); // database connection
-  let passPoints: PassablePoint[] = [];
   // begin transaction
   try {
     await conn.beginTransaction();
     await conn.query(lockTablesSql);
+    console.log("query start");
     // check exist user
     if ((await global.existUserTran(conn, userId)) === true) {
       passPoints = await map.getPassPos(conn);
@@ -46,14 +49,17 @@ async function createRoute(
     console.log(err);
   } finally {
     await conn.query(unlockTablesSql);
+    console.log("query end");
     conn.release();
   }
 
   for (const t of target) {
     if (!map.isPassable(t, passPoints)) {
+      console.log(target[0], t);
       return report(result);
     }
   }
+
   const resultNodes: Position[] | null = [];
   const data = target;
   const start = data.shift();
@@ -87,6 +93,7 @@ async function createRoute(
       }
     }
   }
+
   if (map.checkRoute([resultNodes], passPoints)) {
     result.succeeded = true;
     result.route = resultNodes;
