@@ -11,14 +11,17 @@ interface MonitorCar extends ApiResult {
   dest?: Position[];
   arrival?: boolean;
   finish?: boolean;
+  arrange?: boolean;
   status?: boolean;
   nowPoint?: Position;
   battery?: number;
+  reserve?: boolean;
+  // 車が経路のどこまで進んだか出して
 }
 
 // arrival true を確認する
 const reqOrderStatusSql =
-  "SELECT route, dest, arrival, finish FROM orderTable WHERE orderId = \
+  "SELECT route, dest, arrival, finish, arrange FROM orderTable WHERE orderId = \
   (SELECT orderId FROM userTable \
     WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL) \
     LOCK IN SHARE MODE";
@@ -61,26 +64,31 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             result.route = orderStatus["route"];
             result.dest = orderStatus["dest"];
             result.arrival = orderStatus["arrival"] ? true : false;
+            result.arrange = orderStatus["arrange"] ? true : false;
             result.finish = orderStatus["finish"] ? true : false;
             result.status =
               carStatus["status"] == 5 || carStatus["status"] == 6
-                ? true
-                : false;
+                ? false
+                : true;
             result.nowPoint = carStatus["nowPoint"];
             // result.battery = carStatus["battery"];
             result.battery = rnd; // FOR DEBUG
+            result.reserve = true;
           }
         } else {
           if (
             "route" in orderStatus &&
             "dest" in orderStatus &&
             "arrival" in orderStatus &&
-            "finish" in orderStatus
+            "finish" in orderStatus &&
+            "arrange" in orderStatus
           ) {
             result.route = orderStatus["route"];
             result.dest = orderStatus["dest"];
             result.arrival = orderStatus["arrival"] ? true : false;
             result.finish = orderStatus["finish"] ? true : false;
+            result.arrange = orderStatus["arrange"] ? true : false;
+            result.reserve = false;
           }
         }
       }
