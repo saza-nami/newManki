@@ -13,7 +13,7 @@ interface CreateRoute extends ApiResult {
   reason?: string;
 }
 
-const lockTablesSql = "LOCK TABLES passableTable WRITE, userTable WRITE";
+const lockTablesSql = "LOCK TABLES userTable WRITE, passableTable READ";
 const unlockTablesSql = "UNLOCK TABLES";
 
 async function createRoute(

@@ -7,9 +7,15 @@ import * as map from "./map";
 // car allocate
 export async function unallocateCarTran(): Promise<boolean> {
   let allocFlag: boolean = false;
+
+  const lockTableSql =
+    "LOCK TABLES userTable WRITE, orderTable WRITE, carTable WRITE, passableTable READ";
+  const unlockTableSql = "UNLOCK TABLES";
+
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
+    await conn.query(lockTableSql);
     const passPoints: PassablePoint[] = await map.getPassPos(conn);
     let tmpAstar: Position[] | null = [];
     // 命令受理済みで車未割当かつ終了していないユーザの orderId を取得
@@ -81,6 +87,7 @@ export async function unallocateCarTran(): Promise<boolean> {
     await conn.rollback();
     console.log(err);
   } finally {
+    await conn.query(unlockTableSql);
     conn.release();
   }
   return allocFlag;
@@ -89,9 +96,15 @@ export async function unallocateCarTran(): Promise<boolean> {
 // car allocate
 export async function allocatedCarTran(): Promise<boolean> {
   let allocFlag: boolean = false;
+
+  const lockTableSql =
+    "LOCK TABLES userTable WRITE, orderTable WRITE, carTable WRITE, passableTable READ";
+  const unlockTableSql = "UNLOCK TABLES";
+
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
+    await conn.query(lockTableSql);
     const passPoints: PassablePoint[] = await map.getPassPos(conn);
     let tmpAstar: Position[] | null = [];
     // 車が割当て済みで status が 2 かつ命令が終了していないユーザの orderId を取得
@@ -235,8 +248,8 @@ export async function allocatedCarTran(): Promise<boolean> {
   } catch (err) {
     await conn.rollback();
     console.log(err);
-    return false;
   } finally {
+    await conn.query(unlockTableSql);
     conn.release();
   }
   return allocFlag;
@@ -245,6 +258,9 @@ export async function allocatedCarTran(): Promise<boolean> {
 // Monitoring of cars communication cycles
 export async function intervalCarTran(): Promise<boolean> {
   const result = false;
+  const lockTableSql =
+    "LOCK TABLES orderTable WRITE, carTable WRITE, userTable READ";
+  const unlockTableSql = "UNLOCK TABLES";
   const intervalSql =
     "UPDATE carTable SET intervalCount = intervalCount + 1 \
     WHERE lastAt <= SUBTIME(NOW(), '00:00:10') && intevalCount < 3";
@@ -261,6 +277,7 @@ export async function intervalCarTran(): Promise<boolean> {
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
+    await conn.query(lockTableSql);
     await db.executeTran(conn, intervalSql);
     const cars = db.extractElems(await db.executeTran(conn, errorCarsSql));
     if (cars !== undefined) {
@@ -281,12 +298,16 @@ export async function intervalCarTran(): Promise<boolean> {
     await conn.rollback();
     console.log(err);
   } finally {
+    await conn.query(unlockTableSql);
     conn.release();
   }
   return result;
 }
 
 export async function intervalUserTran(): Promise<boolean> {
+  const lockTableSql =
+    "LOCK TABLES userTable WRITE, orderTable WRITE, carTable WRITE";
+  const unlockTableSql = "UNLOCK TABLES";
   const getUserSql =
     "SELECT userId, orderId, carId FROM userTable \
     WHERE startAt <= SUBTIME(NOW(), '12:00:00') AND endAt IS NULL \
@@ -302,6 +323,7 @@ export async function intervalUserTran(): Promise<boolean> {
 
   try {
     await conn.beginTransaction();
+    await conn.query(lockTableSql);
     const userTable = db.extractElems(await db.executeTran(conn, getUserSql));
     if (userTable !== undefined) {
       for (const elem of userTable) {
@@ -323,6 +345,7 @@ export async function intervalUserTran(): Promise<boolean> {
     await conn.rollback();
     console.log(err);
   } finally {
+    await conn.query(unlockTableSql);
     conn.release();
   }
   return true;

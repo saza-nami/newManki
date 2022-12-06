@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
 import * as db from "../../database";
-import { Position, PassablePoint } from "../../types";
+import { Position } from "../../types";
 
 /*
 export async function existUser(userId: string): Promise<boolean> {

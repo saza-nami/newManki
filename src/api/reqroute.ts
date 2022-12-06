@@ -12,6 +12,8 @@ interface RouteInfo extends ApiResult {
   junkai?: boolean;
 }
 
+const lockTableSql = "LOCK TABLES routeTable READ";
+const unlockTableSql = "UNLOCK TABLES";
 const reqRouteSql =
   "SELECT route, dest, junkai from routeTable WHERE routeName = ?";
 
@@ -27,6 +29,7 @@ async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
   // begin transaction
   try {
     await conn.beginTransaction();
+    await conn.query(lockTableSql);
     if ((await global.existUserTran(conn, userId)) === true) {
       // その名前の経路を取得する
       const rows = db.extractElem(
@@ -48,6 +51,7 @@ async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
     await conn.rollback();
     console.log();
   } finally {
+    await conn.query(unlockTableSql);
     conn.release();
   }
   return report(result);
