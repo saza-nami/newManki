@@ -8,7 +8,7 @@ import ExecRoute from "./execroute";
 import SaveRoute from "./saveroute";
 import MonitorCar from "./monitorcar";
 import EndRoute from "./endroute";
-import Terminate from "../terminate";
+import Terminate from "./terminate";
 import ProceedRoute from "./proceedroute";
 import CommunicateCar from "./communicatecar";
 import LoginAdmin from "./admin/loginadmin";

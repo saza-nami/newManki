@@ -13,6 +13,8 @@ interface PassableInfo extends PassablePoint {
   passableId: number;
 }
 
+const lockTableSql = "LOCK TABLES passableTable READ";
+const unlockTableSql = "UNLOCK TABLES";
 const getPassableSql = "SELECT passableId, radius, lat, lng from passableTable";
 
 async function reqPassable(userId: string): Promise<IsPassable> {
@@ -26,6 +28,7 @@ async function reqPassable(userId: string): Promise<IsPassable> {
 
   try {
     await conn.beginTransaction();
+    await conn.query(lockTableSql);
     // 通行可能領域を取得
     const passPoints = db.extractElems(
       await db.executeTran(conn, getPassableSql)
@@ -46,7 +49,7 @@ async function reqPassable(userId: string): Promise<IsPassable> {
             resData.push({
               passableId: Number(elem["passableId"]),
               position: { lat: Number(elem["lat"]), lng: Number(elem["lng"]) },
-              radius: Number(elem["radius"]),
+              radius: Number(elem["radius"] - 0.3),
             });
           }
         }
@@ -58,6 +61,7 @@ async function reqPassable(userId: string): Promise<IsPassable> {
     await conn.rollback();
     console.log(err);
   } finally {
+    await conn.query(unlockTableSql);
     conn.release();
   }
   return report(result);

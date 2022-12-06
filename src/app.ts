@@ -10,6 +10,7 @@ const port = 3001; // 80
 
 const corsOptions: cors.CorsOptions = {
   origin: [
+    "http://karawasa.kohga.local:8080",
     "http://localhost",
     "http://localhost:3000",
     "http://www.kohga.local",
