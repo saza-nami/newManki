@@ -112,7 +112,7 @@ function isPassable(
   for (const elem of passPoints) {
     const distance = dirdist.distanceTo(p, elem.position);
     const radius = marginFlag ? distance + margin : distance;
-    if (elem.radius > radius) return true;
+    if (elem.radius >= radius) return true;
   }
   return false;
 }
