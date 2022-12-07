@@ -34,7 +34,7 @@ function Astar(
       const nodesLength = nodes.length;
       for (const n of newNodes) {
         let flag = true;
-        if (map.reachIn(nodes[minIndex].position, n, passPoints, true)) {
+        if (map.reachIn(nodes[minIndex].position, n, passPoints)) {
           const node: Node = {
             position: n,
             gCost:
@@ -46,7 +46,7 @@ function Astar(
           };
           // ゴール到達可能かつ候補点の中で最適か
           if (
-            map.reachIn(node.position, goal, passPoints, true) &&
+            map.reachIn(node.position, goal, passPoints) &&
             node.gCost + dirdist.distanceTo(node.position, goal) <
               goalNode.gCost
           ) {
@@ -113,7 +113,7 @@ function optimization(p: Position[], passPoints: PassablePoint[]): Position[] {
   while (i < p.length) {
     for (let k = i + 1; k < p.length; k++) {
       if (k < p.length - 1) {
-        if (!map.isReachable(p[i], p[k], passPoints, true)) {
+        if (!map.isReachable(p[i], p[k], passPoints)) {
           data.push(p[k - 1]);
           i = k;
           break;
