@@ -49,7 +49,7 @@ async function addPassable(
 
 export default express.Router().post("/addPassable", async (req, res) => {
   try {
-    res.json(await addPassable(req.body.adminId, req.body.data));
+    res.json(await addPassable(req.body.adminId, req.body.passPoints));
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }

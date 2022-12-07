@@ -1,6 +1,7 @@
 /* 経路探索API */
 
 import express from "express";
+import worker from "worker_threads";
 import { ApiResult, Position, PassablePoint } from "../types";
 import * as astar from "./scripts/notNotAstar";
 import * as db from "../database";
@@ -38,6 +39,7 @@ async function createRoute(
   try {
     await conn.beginTransaction();
     await conn.query(lockTablesSql);
+
     console.log("query start");
     // check exist user
     if ((await global.existUserTran(conn, userId)) === true) {
@@ -94,10 +96,13 @@ async function createRoute(
     }
   }
 
+  result.succeeded = true;
+  result.route = resultNodes;
+  /*
   if (map.checkRoute([resultNodes], passPoints)) {
-    result.succeeded = true;
-    result.route = resultNodes;
+    
   }
+  */
   return report(result);
 }
 

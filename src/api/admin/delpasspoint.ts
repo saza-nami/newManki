@@ -6,45 +6,28 @@ import * as admin from "./admin";
 import * as db from "../../database";
 import report from "../_report";
 
-interface delInfo {
-  passId: number[];
-  mode?: string;
-}
-
 const lockTablesSql = "LOCK TABLES passableTable WRITE, adminTable READ";
 const unlockTableSql = "UNLOCK TABLES";
 const delPassableSql = "DELETE FROM passableTable WHERE passableId = ?";
 
 async function delPassable(
   adminId: string,
-  delInfo: delInfo
+  passId: number[]
 ): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
   // check input
-  if (typeof adminId === "undefined" && typeof delInfo === "undefined") {
+  if (typeof adminId === "undefined" && typeof passId === "undefined") {
     return report(result);
   }
 
-  const del = delInfo.passId;
+  const del = passId;
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
     await conn.query(lockTablesSql);
     if ((await admin.existAdminTran(conn, adminId)) === true) {
-      if (delInfo.mode === "selected" || delInfo.mode === undefined) {
-        for (const i in del) {
-          await db.executeTran(conn, delPassableSql, [del[i]]);
-        }
-      }
-      if (
-        delInfo.mode === "range" &&
-        delInfo.passId.length === 2 &&
-        delInfo.passId[0] < delInfo.passId[1]
-      ) {
-        console.log(delInfo.passId[0], delInfo.passId[1]);
-        for (let i = delInfo.passId[0]; i <= delInfo.passId[1]; i++) {
-          await db.executeTran(conn, delPassableSql, [i]);
-        }
+      for (const i in del) {
+        await db.executeTran(conn, delPassableSql, [del[i]]);
       }
       result.succeeded = true;
     }
@@ -61,7 +44,7 @@ async function delPassable(
 
 export default express.Router().post("/delPassable", async (req, res) => {
   try {
-    res.json(await delPassable(req.body.adminId, req.body.delInfo));
+    res.json(await delPassable(req.body.adminId, req.body.passId));
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }
