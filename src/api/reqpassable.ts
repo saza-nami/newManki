@@ -49,7 +49,7 @@ async function reqPassable(userId: string): Promise<IsPassable> {
             resData.push({
               passableId: Number(elem["passableId"]),
               position: { lat: Number(elem["lat"]), lng: Number(elem["lng"]) },
-              radius: Number(elem["radius"] - 0.3),
+              radius: Number(elem["radius"]),
             });
           }
         }
