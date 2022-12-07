@@ -106,8 +106,7 @@ function isReachable(
 function isPassable(p: Position, passPoints: PassablePoint[]): boolean {
   for (const elem of passPoints) {
     const distance = dirdist.distanceTo(p, elem.position);
-    const radius = marginFlag ? distance + margin : distance;
-    if (elem.radius >= radius) return true;
+    if (elem.radius >= distance) return true;
   }
   return false;
 }
