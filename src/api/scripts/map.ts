@@ -88,15 +88,12 @@ function isReachable(
   passPoints: PassablePoint[]
 ): boolean {
   if (approx(p, q)) isPassable(p, passPoints);
-  let div = 10;
+  const dt = 0.1;
   const distance = dirdist.distanceTo(p, q);
-  for (let i = div; distance / i >= 1; i = div) {
-    div = i * 10;
-  }
-  const interval = distance / div;
+  const div = Math.round(distance * 100) / 10;
   const direction = dirdist.direction(p, q);
-  for (let t = 0; t <= 1; t += interval) {
-    const middle = dirdist.moveBy(p, interval * t, direction);
+  for (let t = 0; t <= div; t++) {
+    const middle = dirdist.moveBy(p, t * dt, direction);
     if (!isPassable(middle, passPoints)) return false;
   }
   return true;
