@@ -109,20 +109,14 @@ function getMinIndex(nodes: Node[]): number {
 function optimization(p: Position[], passPoints: PassablePoint[]): Position[] {
   const data: Position[] = [];
   data.push(p[0]);
-  let i = 0;
-  while (i < p.length - 1) {
-    let j = i + 1;
-    while (j < p.length) {
-      if (!map.isReachable(p[i], p[j], passPoints)) {
-        data.push(p[j - 1]);
-        i = j - 1;
-        break;
+  for (let i = 0; i < p.length - 2; i) {
+    for (let j = p.length - 1; i < j; j--) {
+      if (map.isReachable(p[i], p[j], passPoints)) {
+        data.push(p[j]);
+        i = j;
       }
-      j++;
     }
-    i = j;
   }
-  data.push(p[p.length - 1]);
   return data;
 }
 
