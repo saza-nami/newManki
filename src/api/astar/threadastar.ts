@@ -75,7 +75,7 @@ async function createRoute(
     new Promise((r) => workerAstar.on("exit", r)),
   ]).then((r) => {
     res.json(r[0]);
-    report(result);
+    report(r[0]);
   });
 }
 
