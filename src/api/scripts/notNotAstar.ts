@@ -110,21 +110,19 @@ function optimization(p: Position[], passPoints: PassablePoint[]): Position[] {
   const data: Position[] = [];
   data.push(p[0]);
   let i = 0;
-  while (i < p.length) {
-    for (let k = i + 1; k < p.length; k++) {
-      if (k < p.length - 1) {
-        if (!map.isReachable(p[i], p[k], passPoints)) {
-          data.push(p[k - 1]);
-          i = k;
-          break;
-        }
-      } else {
-        data.push(p[k]);
-        i = Number.MAX_VALUE;
+  while (i < p.length - 1) {
+    let j = i + 1;
+    while (j < p.length) {
+      if (!map.isReachable(p[i], p[j], passPoints)) {
+        data.push(p[j - 1]);
+        i = j - 1;
         break;
       }
+      j++;
     }
+    i = j;
   }
+  data.push(p[p.length - 1]);
   return data;
 }
 
