@@ -25,7 +25,7 @@ function distanceTo(p: Position, q: Position) {
   const distance = Math.sqrt(
     Math.pow(dy * m, 2) + Math.pow(dx * n * Math.cos(my), 2)
   );
-  return Math.round(distance * 1000) / 1000;
+  return Math.round(distance * 10) / 10;
 }
 
 // pからqの角度算出
