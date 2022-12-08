@@ -50,7 +50,7 @@ export async function unallocateCarTran(): Promise<boolean> {
             // 空いている車分ループ
             for (const carId of car) {
               if ("carId" in carId && "nowPoint" in carId) {
-                tmpAstar = astar.Astar(
+                tmpAstar = await astar.Astar(
                   carId["nowPoint"],
                   route["route"][0][0],
                   passPoints
@@ -168,7 +168,7 @@ export async function allocatedCarTran(): Promise<boolean> {
       if (route !== undefined) {
         if ("route" in route) {
           console.log(route["route"][0][0]);
-          tmpAstar = astar.Astar(
+          tmpAstar = await astar.Astar(
             realloc.nowPoint,
             route["route"][0][0],
             passPoints
@@ -208,7 +208,7 @@ export async function allocatedCarTran(): Promise<boolean> {
         if (route !== undefined && car !== undefined) {
           for (const carId of car) {
             if ("route" in route && "carId" in carId && "nowPoint" in carId) {
-              tmpAstar = astar.Astar(
+              tmpAstar = await astar.Astar(
                 carId["nowPoint"],
                 route["route"][0][0],
                 passPoints
