@@ -1,7 +1,7 @@
 /* 経路探索API */
 
 import express from "express";
-import worker from "worker_threads";
+import { Worker } from "worker_threads";
 import { ApiResult, Position, PassablePoint } from "../types";
 import * as astar from "./scripts/notNotAstar";
 import * as db from "../database";
@@ -71,7 +71,19 @@ async function createRoute(
     let cur = start;
     for (const next of data) {
       const part = astar.Astar(cur, next, passPoints);
-      console.log(part);
+
+      /*
+      let part: Position[] | null = [];
+
+      const thread = new Worker(__dirname + "/worker.js", {
+        workerData: { cur: cur, next: next, passPoints: passPoints },
+      });
+      thread.on("massage", (message: Position[] | null) => {
+        part = message;
+      });
+      console.log("part");
+      */
+
       if (part === null) {
         result.reason =
           "Destination " + (data.indexOf(next) + 2) + " could not be reached.";
@@ -84,7 +96,28 @@ async function createRoute(
         cur = next;
       }
     }
-    const last = astar.Astar(cur, end, passPoints);
+    const last = await astar.Astar(cur, end, passPoints);
+
+    /*
+    let last: Position[] | null = [];
+
+    const thread2 = new Worker("./src/worker.js", {
+      workerData: { cur: cur, next: end, passPoints: passPoints },
+    });
+    Promise.all([
+      new Promise((r) => thread2.on("exit", r)),
+      new Promise((r) =>
+        thread2.on("message", async (message: Position[] | null) => {
+          r(message);
+        })
+      ),
+    ]).then((r) => {
+      console.log(r[1]);
+      last = r[1] as Position[];
+    });
+    */
+
+    console.log("last" + last);
 
     if (last === null) {
       result.reason =
@@ -103,6 +136,7 @@ async function createRoute(
     
   }
   */
+
   return report(result);
 }
 

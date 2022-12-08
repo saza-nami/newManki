@@ -22,20 +22,23 @@ async function addPassable(
   }
 
   const add = passPoints;
+  console.log(adminId);
+  console.log(add);
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
     await conn.query(lockTablesSql);
     if ((await admin.existAdminTran(conn, adminId)) === true) {
       for (const i in add) {
+        console.log(add[i].position.lat);
         await db.executeTran(conn, addPassableSql, [
           add[i].radius,
           add[i].position.lat,
           add[i].position.lng,
         ]);
       }
+      result.succeeded = true;
     }
-    result.succeeded = true;
     await conn.commit();
   } catch (err) {
     await conn.rollback();

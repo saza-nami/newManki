@@ -95,7 +95,7 @@ function isReachable(
   }
   const interval = distance / div;
   const direction = dirdist.direction(p, q);
-  for (let t = 0; t <= 1; t += interval) {
+  for (let t = 0; t <= div; t += 1) {
     const middle = dirdist.moveBy(p, interval * t, direction);
     if (!isPassable(middle, passPoints)) return false;
   }
