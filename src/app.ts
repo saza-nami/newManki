@@ -6,7 +6,7 @@ import * as tran from "./api/scripts/transaction";
 import report from "./api/_report";
 
 const app = express();
-const port = 3001; // 80
+const port = 80;
 
 const corsOptions: cors.CorsOptions = {
   origin: [
