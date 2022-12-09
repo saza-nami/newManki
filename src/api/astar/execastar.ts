@@ -10,7 +10,7 @@ interface CreateRoute extends ApiResult {
 }
 
 function thAstar(target: Position[], passPoints: PassablePoint[]): CreateRoute {
-  const result: CreateRoute = { succeeded: true };
+  const result: CreateRoute = { succeeded: false };
   for (const t of target) {
     if (!map.isPassable(t, passPoints)) {
       console.log(target[0], t);
