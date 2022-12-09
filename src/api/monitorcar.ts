@@ -19,18 +19,16 @@ interface MonitorCar extends ApiResult {
   // 車が経路のどこまで進んだか出して
 }
 
-const lockTableSql = "LOCK TABLES orderTable READ, carTable READ";
-const unlockTableSql = "UNLOCK TABLES";
 // arrival true を確認する
 const reqOrderStatusSql =
-  "SELECT route, dest, arrival, finish, arrange FROM orderTable WHERE orderId = \
-  (SELECT orderId FROM userTable \
-    WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL) \
+  "SELECT route, dest, arrival, finish, arrange FROM orderTable \
+  WHERE orderId = (SELECT orderId FROM userTable \
+    WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL LOCK IN SHARE MODE) \
     LOCK IN SHARE MODE";
 const reqCarStatusSql =
   "SELECT status, nowPoint, battery FROM carTable WHERE carId = \
   (SELECT carId FROM userTable \
-    WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL) \
+    WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL LOCK IN SHARE MODE) \
     LOCK IN SHARE MODE";
 
 async function monitorCar(userId: string): Promise<MonitorCar> {
@@ -45,7 +43,6 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
 
   try {
     await conn.beginTransaction();
-    await conn.query(lockTableSql);
     if ((await global.existUserTran(conn, userId)) === true) {
       const orderStatus = db.extractElem(
         await db.executeTran(conn, reqOrderStatusSql, [userId])
@@ -102,7 +99,6 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTableSql);
     conn.release();
   }
   return report(result);

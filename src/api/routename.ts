@@ -15,10 +15,8 @@ interface RouteInfo extends ApiResult {
   passableNames?: PassableName[];
 }
 
-const lockTableSql =
-  "LOCK TABLES userTable READ, routeTable READ, passableTable READ"; // lock table
-const unlockTableSql = "UNLOCK TABLES"; // unlock table
-const reqRouteNames = "SELECT routeName, route FROM routeTable";
+const reqRouteNames =
+  "SELECT routeName, route FROM routeTable LOCK IN SHARE MODE";
 
 async function routeNames(userId: string): Promise<RouteInfo> {
   // return value of API
@@ -32,7 +30,6 @@ async function routeNames(userId: string): Promise<RouteInfo> {
   // begin transaction
   try {
     await conn.beginTransaction();
-    await conn.query(lockTableSql);
     if ((await global.existUserTran(conn, userId)) === true) {
       const rows = db.extractElems(await db.executeTran(conn, reqRouteNames));
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
@@ -76,7 +73,6 @@ async function routeNames(userId: string): Promise<RouteInfo> {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTableSql);
     conn.release();
   }
   return report(result);

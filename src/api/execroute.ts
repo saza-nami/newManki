@@ -11,11 +11,6 @@ interface ExecRoute extends ApiResult {
   message?: string;
 }
 
-// lock tables
-const lockTablesSql =
-  "LOCK TABLES orderTable WRITE, userTable WRITE, passableTable READ";
-// unlock tables
-const unlockTablesSql = "UNLOCK TABLES";
 const reqUsersOrderSql =
   "SELECT orderId FROM userTable \
   WHERE userId = UUID_TO_BIN(?,1) AND endAt IS NULL \
@@ -23,10 +18,12 @@ const reqUsersOrderSql =
 const insertOrderSql =
   "INSERT INTO orderTable(route, dest, junkai) VALUES (?, ?, ?)";
 const reqLastOrderIdSql =
-  "SELECT orderId FROM orderTable ORDER BY orderId DESC LIMIT 1";
+  "SELECT orderId FROM orderTable ORDER BY orderId DESC \
+  LIMIT 1 LOCK IN SHARE MODE";
 const updateUserInfoSql =
   "UPDATE userTable SET orderId = ? WHERE userId = UUID_TO_BIN(?, 1)";
-const completedOrderSql = "SELECT endAt FROM orderTable WHERE orderId = ?";
+const completedOrderSql =
+  "SELECT endAt FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE";
 
 async function reserveRoute(
   userId: string,
@@ -48,7 +45,6 @@ async function reserveRoute(
   // begin transaction
   try {
     await conn.beginTransaction();
-    await conn.query(lockTablesSql);
     // check exist user
     if ((await global.existUserTran(conn, userId)) === true) {
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
@@ -113,7 +109,6 @@ async function reserveRoute(
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTablesSql);
     conn.release();
   }
   return report(result);
