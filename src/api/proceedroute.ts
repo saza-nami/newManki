@@ -6,11 +6,9 @@ import * as db from "../database";
 import * as global from "./scripts/global";
 import report from "./_report";
 
-const lockTableSql =
-  "LOCK TABLES carTable WRITE, orderTable WRITE, userTable READ";
-const unlockTableSql = "UNLOCK TABLES";
 const reqUserInfoSql =
-  "SELECT carId, orderId from userTable WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
+  "SELECT carId, orderId from userTable \
+  WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
 // request order's flags
 const reqOrdersFlagsSql =
   "SELECT finish, arrival from orderTable WHERE orderId = ? LOCK IN SHARE MODE";
@@ -31,7 +29,6 @@ async function proceedRoute(userId: string): Promise<ApiResult> {
   // begin transaction
   try {
     await conn.beginTransaction();
-    await conn.query(lockTableSql);
     // check exist user
     if ((await global.existUserTran(conn, userId)) === true) {
       const proceed = db.extractElem(
@@ -72,7 +69,6 @@ async function proceedRoute(userId: string): Promise<ApiResult> {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTableSql);
     conn.release();
   }
   return report(result);

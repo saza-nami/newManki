@@ -6,9 +6,6 @@ import * as db from "../database";
 import * as global from "./scripts/global";
 import report from "./_report";
 
-const lockTableSql =
-  "LOCK TABLES userTable READ, orderTable READ, carTable READ";
-const unlockTableSql = "UNLOCK TABLES";
 const userStatusSql =
   "SELECT carId, orderId FROM userTable \
   WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
@@ -28,7 +25,6 @@ async function isAcceptableTran(userId: string): Promise<ApiResult> {
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    await conn.query(lockTableSql);
     if ((await global.existUserTran(conn, userId)) === true) {
       const isOrder = db.extractElem(
         await db.executeTran(conn, userStatusSql, [userId])
@@ -66,7 +62,6 @@ async function isAcceptableTran(userId: string): Promise<ApiResult> {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTableSql);
     conn.release();
   }
   return report(result);

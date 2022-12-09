@@ -6,9 +6,6 @@ import * as db from "../database";
 import * as global from "./scripts/global";
 import report from "./_report";
 
-const lockTableSql =
-  "LOCK TABLES orderTable WRITE, carTable WRITE, userTable READ";
-const unlockTableSql = "UNLOCK TABLES";
 async function endRoute(userId: string): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
   // check input
@@ -20,7 +17,6 @@ async function endRoute(userId: string): Promise<ApiResult> {
 
   try {
     await conn.beginTransaction();
-    await conn.query(lockTableSql);
     if ((await global.existUserTran(conn, userId)) === true) {
       await global.executeEnd(conn, userId);
       result.succeeded = true;
@@ -30,7 +26,6 @@ async function endRoute(userId: string): Promise<ApiResult> {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTableSql);
     conn.release();
   }
   return report(result);
