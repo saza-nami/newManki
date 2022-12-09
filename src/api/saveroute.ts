@@ -12,8 +12,6 @@ interface SaveRoute extends ApiResult {
   message?: string;
 }
 
-const lockTableSql = "LOCK TABLES routeTable WRITE";
-const unlockTableSql = "UNLOCK TABLES";
 const insertRouteSql =
   "INSERT INTO routeTable(routeName, route, dest, junkai) \
   VALUES (?, JSON_QUOTE(?), JSON_QUOTE(?), ?)";
@@ -39,7 +37,6 @@ async function saveRoute(
 
   try {
     await conn.beginTransaction();
-    await conn.query(lockTableSql);
     if ((await global.existUserTran(conn, userId)) === true) {
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
       let reached = true;
@@ -75,7 +72,6 @@ async function saveRoute(
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTableSql);
     conn.release();
   }
 

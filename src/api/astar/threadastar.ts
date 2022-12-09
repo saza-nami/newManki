@@ -13,21 +13,6 @@ interface CreateRoute extends ApiResult {
   reason?: string;
 }
 
-const lockTablesSql = "LOCK TABLES userTable WRITE, passableTable READ";
-const unlockTablesSql = "UNLOCK TABLES";
-
-async function task(res: express.Response) {
-  const result: ApiResult = { succeeded: false };
-  const worker1 = new Worker("./src/worker.js", {
-    workerData: { timer: "worker1" },
-  });
-  Promise.all([new Promise((r) => worker1.on("exit", r))]).then((r) => {
-    result.succeeded = true;
-    res.json(result);
-    report(result);
-  });
-}
-
 async function createRoute(
   userId: string,
   target: Position[],
@@ -50,9 +35,6 @@ async function createRoute(
   // begin transaction
   try {
     await conn.beginTransaction();
-    await conn.query(lockTablesSql);
-
-    console.log("query start");
     // check exist user
     if ((await global.existUserTran(conn, userId)) === true) {
       passPoints = await map.getPassPos(conn);
@@ -62,8 +44,6 @@ async function createRoute(
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTablesSql);
-    console.log("query end");
     conn.release();
   }
 

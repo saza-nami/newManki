@@ -36,7 +36,7 @@ async function getPassPos(
 ): Promise<PassablePoint[]> {
   const result: PassablePoint[] = [];
   const passableSql =
-    "SELECT radius, lat, lng from passableTable LOCK IN SHARE MODE";
+    "SELECT radius, lat, lng FROM passableTable LOCK IN SHARE MODE";
   const isPassable = db.extractElems(
     await db.executeTran(connected, passableSql)
   );

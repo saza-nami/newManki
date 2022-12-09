@@ -2,28 +2,6 @@ import mysql from "mysql2/promise";
 import * as db from "../../database";
 import { Position } from "../../types";
 
-/*
-export async function existUser(userId: string): Promise<boolean> {
-  // JSON で送られてきた userId が UUID の形式か
-  const isUuidSql = "SELECT IS_UUID(?) as UUID";
-  const bin = await db.execute(isUuidSql, [userId]);
-  // userId が存在するか
-  const existUserSql =
-    "SELECT COUNT(*) from userTable WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL";
-  if (Array.isArray(bin) && Array.isArray(bin[0])) {
-    if ("UUID" in bin[0][0] && bin[0][0]["UUID"] === 1) {
-      const rows = await db.execute(existUserSql, [userId]);
-      if (Array.isArray(rows) && Array.isArray(rows[0])) {
-        if ("COUNT(*)" in rows[0][0] && rows[0][0]["COUNT(*)"] === 1) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
-*/
-
 export async function existUserTran(
   connected: mysql.PoolConnection,
   userId: string
@@ -52,28 +30,6 @@ export async function existUserTran(
   }
   return false;
 }
-
-/*
-export async function existCar(carId: string): Promise<boolean> {
-  // JSON で送られてきた carId が UUID の形式か
-  const isUuidSql = "SELECT IS_UUID(?) as UUID";
-  const bin = await db.execute(isUuidSql, [carId]);
-  // carId が存在するか
-  const existCarSql =
-    "SELECT COUNT(*) from carTable WHERE carId = UUID_TO_BIN(?, 1)";
-  if (Array.isArray(bin) && Array.isArray(bin[0])) {
-    if ("UUID" in bin[0][0] && bin[0][0]["UUID"] === 1) {
-      const rows = await db.execute(existCarSql, [carId]);
-      if (Array.isArray(rows) && Array.isArray(rows[0])) {
-        if ("COUNT(*)" in rows[0][0] && rows[0][0]["COUNT(*)"] === 1) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
-*/
 
 export async function existCarTran(
   connected: mysql.PoolConnection,

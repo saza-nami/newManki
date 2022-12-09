@@ -3,7 +3,6 @@ import IsAcceptable from "./isacceptable";
 import RouteName from "./routename";
 import ReqRoute from "./reqroute";
 import ReqPassable from "./reqpassable";
-import Astar from "./astar";
 import ExecRoute from "./execroute";
 import SaveRoute from "./saveroute";
 import MonitorCar from "./monitorcar";
@@ -26,7 +25,6 @@ export default [
   RouteName,
   ReqRoute,
   ReqPassable,
-  Astar,
   ExecRoute,
   SaveRoute,
   MonitorCar,

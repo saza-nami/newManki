@@ -22,7 +22,7 @@ const insertCarSql =
   VALUES (?, ?, ?)";
 const reqLastCarIdSql =
   "SELECT BIN_TO_UUID(carId, 1) FROM carTable \
-  ORDER BY carId DESC, lastAt DESC LIMIT 1";
+  ORDER BY carId DESC, lastAt DESC LIMIT 1 LOCK IN SHARE MODE";
 const updateCarInfoSql =
   "UPDATE carTable SET sequence = ?, nowPoint = ?, battery = ?, \
   lastAt = NOW() WHERE carId = UUID_TO_BIN(?, 1)";
@@ -52,9 +52,9 @@ async function createReply(
 
   try {
     await conn.beginTransaction();
-    await conn.query(lockTablesSql);
     if (request === "hello") {
       if (typeof location !== undefined && typeof battery !== undefined) {
+        await conn.query(lockTablesSql);
         await db.executeTran(conn, insertCarSql, [rndSeq, location, battery]);
         const carInfo = db.extractElem(
           await db.executeTran(conn, reqLastCarIdSql)

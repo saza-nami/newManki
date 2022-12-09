@@ -10,7 +10,7 @@ const lockTableSql = "LOCK TABLES adminTable WRITE";
 const unlockTableSql = "UNLOCK TABLES";
 const reqAdminPassSql =
   "SELECT adminPassHash FROM adminTable WHERE adminId = UUID_TO_BIN(?, 1) \
-  AND endAt IS NULL";
+  AND endAt IS NULL LOCK IN SHARE MODE";
 const changePasswdSql =
   "UPDATE adminTable SET adminPassHash = ? , startAt = NOW(), endAt = NOW() \
   WHERE adminId = ?";

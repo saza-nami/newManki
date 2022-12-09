@@ -12,15 +12,10 @@ async function terminate(userId: string): Promise<ApiResult> {
   if (typeof userId === "undefined") {
     return report(result);
   }
-
-  const lockTableSql =
-    "LOCK TABLES orderTable WRITE, carTable WRITE, userTable WRITE";
-  const unlockTableSql = "UNLOCK TABLES";
   const conn = await db.createNewConn();
 
   try {
     await conn.beginTransaction();
-    await conn.query(lockTableSql);
     if ((await global.existUserTran(conn, userId)) === true) {
       await global.executeEnd(conn, userId);
       await global.executeTerminate(conn, userId);
@@ -31,7 +26,6 @@ async function terminate(userId: string): Promise<ApiResult> {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTableSql);
     conn.release();
   }
   return report(result);
