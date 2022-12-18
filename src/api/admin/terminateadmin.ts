@@ -1,9 +1,9 @@
 /* 管理者終了 */
 import express from "express";
-import { ApiResult } from "../../types";
-import * as admin from "./admin";
-import * as db from "../../database";
-import report from "../_report";
+import { ApiResult } from "types";
+import * as admin from "api/admin/admin";
+import * as db from "database";
+import report from "api/_report";
 
 async function terminateAdmin(adminId: string): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };

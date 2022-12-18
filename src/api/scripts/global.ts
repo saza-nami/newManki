@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
-import * as db from "../../database";
-import { Position } from "../../types";
+import * as db from "database";
+import { Position } from "types";
 
 export async function existUserTran(
   connected: mysql.PoolConnection,

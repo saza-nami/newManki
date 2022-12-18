@@ -1,10 +1,10 @@
 /* 状態遷移図でいうところの動作中チェックAPI */
 
 import express from "express";
-import { ApiResult } from "../types";
-import * as db from "../database";
-import * as global from "./scripts/global";
-import report from "./_report";
+import { ApiResult } from "types";
+import * as db from "database";
+import * as global from "api/scripts/global";
+import report from "api/_report";
 
 const userStatusSql =
   "SELECT carId, orderId FROM userTable \
