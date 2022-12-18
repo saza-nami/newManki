@@ -1,10 +1,10 @@
 /* 通行可能領域削除 */
 
 import express from "express";
-import { ApiResult } from "../../types";
-import * as admin from "./admin";
-import * as db from "../../database";
-import report from "../_report";
+import { ApiResult } from "types";
+import * as admin from "api/admin/admin";
+import * as db from "database";
+import report from "api/_report";
 
 const lockTablesSql = "LOCK TABLES passableTable WRITE, adminTable READ";
 const unlockTableSql = "UNLOCK TABLES";

@@ -1,4 +1,4 @@
-import { Position } from "../../types";
+import { Position } from "types";
 
 const deg2rad = (deg: number) => deg * (Math.PI / 180.0);
 const rad2deg = (rad: number) => rad / (Math.PI / 180.0);

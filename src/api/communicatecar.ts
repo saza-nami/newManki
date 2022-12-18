@@ -1,10 +1,10 @@
 // 対車両通信 API
 import express from "express";
-import { ApiResult, Position, proceed, Access } from "../types";
-import * as db from "../database";
-import * as global from "./scripts/global";
-import report from "./_report";
-import * as tran from "./scripts/transaction";
+import { ApiResult, Position, proceed, Access } from "types";
+import * as db from "database";
+import * as global from "api/scripts/global";
+import report from "api/_report";
+import * as tran from "api/scripts/transaction";
 
 interface ReplyInfo extends ApiResult {
   responce?: string;

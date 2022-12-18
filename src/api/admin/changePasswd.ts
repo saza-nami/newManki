@@ -2,9 +2,9 @@
 
 import bcrypt from "bcrypt";
 import express from "express";
-import { ApiResult } from "../../types";
-import * as db from "../../database";
-import report from "../_report";
+import { ApiResult } from "types";
+import * as db from "database";
+import report from "api/_report";
 
 const lockTableSql = "LOCK TABLES adminTable WRITE";
 const unlockTableSql = "UNLOCK TABLES";
