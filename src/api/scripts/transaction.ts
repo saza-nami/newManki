@@ -1,8 +1,8 @@
 import mysql from "mysql2/promise";
-import { Position, PassablePoint, AllocatedCar, proceed } from "../../types";
-import * as astar from "./notNotAstar";
-import * as db from "../../database";
-import * as map from "./map";
+import { Position, PassablePoint, AllocatedCar, proceed } from "types";
+import * as astar from "api/scripts/notNotAstar";
+import * as db from "database";
+import * as map from "api/scripts/map";
 
 // car allocate
 export async function unallocateCarTran(): Promise<boolean> {

@@ -2,11 +2,11 @@
 
 import express from "express";
 import { Worker } from "worker_threads";
-import { ApiResult, Position, PassablePoint } from "../../types";
-import * as db from "../../database";
-import * as global from "../scripts/global";
-import * as map from "../scripts/map";
-import report from "../_report";
+import { ApiResult, Position, PassablePoint } from "types";
+import * as db from "database";
+import * as global from "api/scripts/global";
+import * as map from "api/scripts/map";
+import report from "api/_report";
 
 interface CreateRoute extends ApiResult {
   route?: Position[] | null;

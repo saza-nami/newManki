@@ -1,8 +1,8 @@
-import { PassablePoint, Position } from "../../types";
+import { PassablePoint, Position } from "types";
 
-import * as db from "../../database";
+import * as db from "database";
 import mysql from "mysql2/promise";
-import * as dirdist from "./dirdist";
+import * as dirdist from "api/scripts/dirdist";
 
 /** 地点探索距離[m] */
 const stanDistance = 1;

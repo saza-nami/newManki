@@ -1,11 +1,11 @@
 // 状態遷移図の既存ルート選択で呼ばれるAPI
 
 import express from "express";
-import { ApiResult, PassablePoint } from "../types";
-import * as db from "../database";
-import * as global from "./scripts/global";
-import * as map from "./scripts/map";
-import report from "./_report";
+import { ApiResult, PassablePoint } from "types";
+import * as db from "database";
+import * as global from "api/scripts/global";
+import * as map from "api/scripts/map";
+import report from "api/_report";
 
 interface PassableName {
   routeName: string;

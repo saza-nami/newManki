@@ -1,7 +1,7 @@
 /* 管理者の操作に使用する定数, 関数 */
 import bcrypt from "bcrypt";
 import mysql from "mysql2/promise";
-import * as db from "../../database";
+import * as db from "database";
 
 export async function existAdminTran(
   connected: mysql.PoolConnection,

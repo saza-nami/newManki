@@ -1,7 +1,7 @@
-import { Position, Node, PassablePoint } from "../../types";
+import { Position, Node, PassablePoint } from "types";
 
-import * as map from "./map";
-import * as dirdist from "./dirdist";
+import * as map from "api/scripts/map";
+import * as dirdist from "api/scripts/dirdist";
 
 /** 経路探索 */
 function Astar(
