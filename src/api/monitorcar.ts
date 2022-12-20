@@ -32,15 +32,9 @@ const reqCarStatusSql =
     LOCK IN SHARE MODE";
 
 async function monitorCar(userId: string): Promise<MonitorCar> {
-  // return value of API
   const result: MonitorCar = { succeeded: false };
-  // check input
-  if (typeof userId === "undefined") {
-    return report(result);
-  }
-  const rnd = Math.random() * 100;
+  const rnd = Math.random() * 100; // FOR DEBUG
   const conn = await db.createNewConn();
-
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
@@ -51,21 +45,34 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
         await db.executeTran(conn, reqCarStatusSql, [userId])
       );
       if (orderStatus !== undefined) {
+        console.log(orderStatus);
+        console.log(carStatus);
         if (carStatus !== undefined) {
+          console.log("ok1");
           if (
             "route" in orderStatus &&
+            orderStatus["route"] !== undefined &&
             "dest" in orderStatus &&
+            orderStatus["dest"] !== undefined &&
             "arrival" in orderStatus &&
+            orderStatus["arrival"] !== undefined &&
             "finish" in orderStatus &&
+            orderStatus["finish"] !== undefined &&
+            "arrange" in orderStatus &&
+            orderStatus["arrange"] !== undefined &&
             "status" in carStatus &&
+            carStatus["status"] !== undefined &&
             "nowPoint" in carStatus &&
-            "battery" in carStatus
+            carStatus["nowPoint"] !== undefined &&
+            "battery" in carStatus &&
+            carStatus["battery"] !== undefined
           ) {
+            console.log("ok2");
             result.route = orderStatus["route"];
             result.dest = orderStatus["dest"];
             result.arrival = orderStatus["arrival"] ? true : false;
-            result.arrange = orderStatus["arrange"] ? true : false;
             result.finish = orderStatus["finish"] ? true : false;
+            result.arrange = orderStatus["arrange"] ? true : false;
             result.status =
               carStatus["status"] == 5 || carStatus["status"] == 6
                 ? false
@@ -78,10 +85,15 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
         } else {
           if (
             "route" in orderStatus &&
+            orderStatus["route"] !== undefined &&
             "dest" in orderStatus &&
+            orderStatus["dest"] !== undefined &&
             "arrival" in orderStatus &&
+            orderStatus["arrival"] !== undefined &&
             "finish" in orderStatus &&
-            "arrange" in orderStatus
+            orderStatus["finish"] !== undefined &&
+            "arrange" in orderStatus &&
+            orderStatus["arrange"] !== undefined
           ) {
             result.route = orderStatus["route"];
             result.dest = orderStatus["dest"];
@@ -91,8 +103,10 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             result.reserve = false;
           }
         }
+        result.succeeded = true;
       }
-      result.succeeded = true;
+    } else {
+      result.reason = "Illegal user.";
     }
     await conn.commit();
   } catch (err) {
@@ -106,7 +120,11 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
 
 export default express.Router().post("/monitorCar", async (req, res) => {
   try {
-    res.json(await monitorCar(req.body.userId));
+    if (typeof req.body.userId === "undefined") {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    } else {
+      res.json(await monitorCar(req.body.userId));
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }

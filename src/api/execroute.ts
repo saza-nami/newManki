@@ -11,18 +11,20 @@ interface ExecRoute extends ApiResult {
   message?: string;
 }
 
-const reqUsersOrderSql =
+const lockUWOWPR =
+  "LOCK TABLES userTable WRITE, orderTable WRITE, passableTable READ";
+const unlock = "UNLOCK TABLES";
+const reqUserOrderId =
   "SELECT orderId FROM userTable \
   WHERE userId = UUID_TO_BIN(?,1) AND endAt IS NULL \
-  LOCK IN SHARE MODE";
-const insertOrderSql =
-  "INSERT INTO orderTable(route, dest, junkai) VALUES (?, ?, ?)";
-const reqLastOrderIdSql =
+  FOR UPDATE";
+const addOrder = "INSERT INTO orderTable(route, dest, junkai) VALUES (?, ?, ?)";
+const reqLastOrder =
   "SELECT orderId FROM orderTable ORDER BY orderId DESC \
   LIMIT 1 LOCK IN SHARE MODE";
-const updateUserInfoSql =
+const updUserorderId =
   "UPDATE userTable SET orderId = ? WHERE userId = UUID_TO_BIN(?, 1)";
-const completedOrderSql =
+const reqOrderEndAt =
   "SELECT endAt FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE";
 
 async function reserveRoute(
@@ -30,22 +32,11 @@ async function reserveRoute(
   route: Position[][],
   junkai: boolean
 ): Promise<ExecRoute> {
-  // return value of API
   const result: ExecRoute = { succeeded: false };
-  // check parameter
-  if (
-    typeof userId === "undefined" ||
-    typeof route === "undefined" ||
-    typeof junkai === "undefined"
-  ) {
-    return report(result);
-  }
-
-  const conn = await db.createNewConn(); // database connection
-  // begin transaction
+  const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    // check exist user
+    await conn.query(lockUWOWPR);
     if ((await global.existUserTran(conn, userId)) === true) {
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
       // check route in passable area
@@ -53,47 +44,46 @@ async function reserveRoute(
         // insert route in the database
         const dest = global.routeToDest(route);
         const existOrder = db.extractElem(
-          await db.executeTran(conn, reqUsersOrderSql, [userId])
+          await db.executeTran(conn, reqUserOrderId, [userId])
         );
         if (existOrder !== undefined && "orderId" in existOrder) {
           if (existOrder["orderId"] === null) {
-            await db.executeTran(conn, insertOrderSql, [route, dest, junkai]);
-            const createdOrderId = db.extractElem(
-              await db.executeTran(conn, reqLastOrderIdSql)
+            await db.executeTran(conn, addOrder, [route, dest, junkai]);
+            const created = db.extractElem(
+              await db.executeTran(conn, reqLastOrder)
             );
-            if (createdOrderId !== undefined && "orderId" in createdOrderId) {
-              await db.executeTran(conn, updateUserInfoSql, [
-                createdOrderId["orderId"],
+            if (
+              created !== undefined &&
+              "orderId" in created &&
+              created["orderId"]
+            ) {
+              await db.executeTran(conn, updUserorderId, [
+                created["orderId"],
                 userId,
               ]);
+              result.succeeded = true;
             }
-            result.succeeded = true;
           } else {
             const endAt = db.extractElem(
-              await db.executeTran(conn, completedOrderSql, [
-                existOrder["orderId"],
-              ])
+              await db.executeTran(conn, reqOrderEndAt, [existOrder["orderId"]])
             );
             if (endAt !== undefined && "endAt" in endAt) {
               if (endAt["endAt"] !== null) {
-                await db.executeTran(conn, insertOrderSql, [
-                  route,
-                  dest,
-                  junkai,
-                ]);
-                const createdOrderId = db.extractElem(
-                  await db.executeTran(conn, reqLastOrderIdSql)
+                await db.executeTran(conn, addOrder, [route, dest, junkai]);
+                const created = db.extractElem(
+                  await db.executeTran(conn, reqLastOrder)
                 );
                 if (
-                  createdOrderId !== undefined &&
-                  "orderId" in createdOrderId
+                  created !== undefined &&
+                  "orderId" in created &&
+                  created["orderId"]
                 ) {
-                  await db.executeTran(conn, updateUserInfoSql, [
-                    createdOrderId["orderId"],
+                  await db.executeTran(conn, updUserorderId, [
+                    created["orderId"],
                     userId,
                   ]);
+                  result.succeeded = true;
                 }
-                result.succeeded = true;
               } else {
                 result.message = "Reject new order!";
               }
@@ -103,12 +93,15 @@ async function reserveRoute(
       } else {
         result.message = "Unreachable!";
       }
+    } else {
+      result.reason = "Illegal user.";
     }
     await conn.commit();
   } catch (err) {
     await conn.rollback();
     console.log(err);
   } finally {
+    await conn.query(unlock);
     conn.release();
   }
   return report(result);
@@ -116,9 +109,17 @@ async function reserveRoute(
 
 export default express.Router().post("/execRoute", async (req, res) => {
   try {
-    res.json(
-      await reserveRoute(req.body.userId, req.body.data, req.body.junkai)
-    );
+    if (
+      typeof req.body.userId === "undefined" ||
+      typeof req.body.data === "undefined" ||
+      typeof req.body.junkai === "undefined"
+    ) {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    } else {
+      res.json(
+        await reserveRoute(req.body.userId, req.body.data, req.body.junkai)
+      );
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }

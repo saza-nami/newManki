@@ -6,7 +6,7 @@ import * as tran from "api/scripts/transaction";
 import report from "api/_report";
 
 const app = express();
-const port = 80;
+const port = 3001;
 
 const corsOptions: cors.CorsOptions = {
   origin: [
@@ -28,15 +28,7 @@ for (const router of routers) app.use("/", router);
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
 
-const carAllocInterval = setInterval(async () => {
-  report(await tran.unallocateCarTran());
-  report(await tran.allocatedCarTran());
-}, 5000);
-
-const adminInterval = setInterval(async () => {
-  report(await admin.terminateInterval());
-}, 30000);
-
-const userInterval = setInterval(async () => {
-  report(await tran.intervalUserTran());
-}, 5000);
+tran.unallocateCarTran();
+tran.allocatedCarTran();
+admin.terminateInterval();
+tran.intervalUserTran();
