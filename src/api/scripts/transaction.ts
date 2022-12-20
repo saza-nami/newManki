@@ -5,28 +5,31 @@ import * as db from "../../database";
 import * as map from "./map";
 
 // car allocate
-export async function unallocateCarTran(): Promise<boolean> {
+export async function unallocateCarTran() {
   let allocFlag: boolean = false;
-
+  const lockUWOWCWPR =
+    "LOCK TABLES userTable WRITE, orderTable WRITE, \
+    carTable WRITE, passableTable READ";
+  const unlock = "UNLOCK TABLES";
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    const passPoints: PassablePoint[] = await map.getPassPos(conn);
+    await conn.query(lockUWOWCWPR);
     let tmpAstar: Position[] | null = [];
-    // 命令受理済みで車未割当かつ終了していないユーザの orderId を取得
     const order = db.extractElems(
       await db.executeTran(
         conn,
         "SELECT orderId FROM userTable \
         WHERE carId IS NULL AND orderId IS NOT NULL \
-        AND endAt IS NULL LOCK IN SHARE MODE"
+        AND endAt IS NULL FOR UPDATE"
       )
     );
+    const passPoints: PassablePoint[] = await map.getPassPos(conn);
     const car = db.extractElems(
       await db.executeTran(
         conn,
         "SELECT carId, nowPoint, battery FROM carTable \
-        WHERE status = 1 AND battery >= 30 LOCK IN SHARE MODE"
+        WHERE status = 1 AND battery >= 30 FOR UPDATE"
       )
     );
     if (order !== undefined && car !== undefined) {
@@ -37,7 +40,7 @@ export async function unallocateCarTran(): Promise<boolean> {
             await db.executeTran(
               conn,
               "SELECT route FROM orderTable \
-              WHERE orderId = ? LOCK IN SHARE MODE",
+              WHERE orderId = ? FOR UPDATE",
               [orderId["orderId"]]
             )
           );
@@ -45,7 +48,7 @@ export async function unallocateCarTran(): Promise<boolean> {
             // 空いている車分ループ
             for (const carId of car) {
               if ("carId" in carId && "nowPoint" in carId) {
-                tmpAstar = await astar.Astar(
+                tmpAstar = astar.Astar(
                   carId["nowPoint"],
                   route["route"][0][0],
                   passPoints
@@ -53,8 +56,8 @@ export async function unallocateCarTran(): Promise<boolean> {
                 if (tmpAstar !== null) {
                   await db.executeTran(
                     conn,
-                    "UPDATE carTable SET status = 3 WHERE carId = ?",
-                    [carId["carId"]]
+                    "UPDATE userTable SET carId = ? WHERE orderId = ?",
+                    [carId["carId"], orderId["orderId"]]
                   );
                   await db.executeTran(
                     conn,
@@ -65,8 +68,8 @@ export async function unallocateCarTran(): Promise<boolean> {
                   );
                   await db.executeTran(
                     conn,
-                    "UPDATE userTable SET carId = ? WHERE orderId = ?",
-                    [carId["carId"], orderId["orderId"]]
+                    "UPDATE carTable SET status = 3 WHERE carId = ?",
+                    [carId["carId"]]
                   );
                   allocFlag = true;
                 }
@@ -82,47 +85,51 @@ export async function unallocateCarTran(): Promise<boolean> {
     await conn.rollback();
     console.log(err);
   } finally {
+    await conn.query(unlock);
     conn.release();
   }
-  return allocFlag;
+  setTimeout(() => unallocateCarTran(), 5000);
 }
 
-// car allocate
-export async function allocatedCarTran(): Promise<boolean> {
+// car reallocate
+export async function allocatedCarTran() {
   let allocFlag: boolean = false;
-
+  const lockUWOWCWPR =
+    "LOCK TABLES userTable WRITE, orderTable WRITE, \
+    carTable WRITE, passableTable READ";
+  const unlock = "UNLOCK TABLES";
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    const passPoints: PassablePoint[] = await map.getPassPos(conn);
+    await conn.query(lockUWOWCWPR);
     let tmpAstar: Position[] | null = [];
-    // 車が割当て済みで status が 2 かつ命令が終了していないユーザの orderId を取得
     const canditateAlloc = db.extractElems(
       await db.executeTran(
         conn,
         "SELECT carId, orderId FROM userTable \
         WHERE carId IS NOT NULL AND orderId IS NOT NULL \
-        AND endAt IS NULL LOCK IN SHARE MODE"
+        AND endAt IS NULL FOR UPDATE"
       )
     );
+    const passPoints: PassablePoint[] = await map.getPassPos(conn);
     const order: AllocatedCar[] = []; // 車を割り当てなければいけない命令群
     if (canditateAlloc !== undefined) {
       // 命令候補分ループ
       for (const alloc of canditateAlloc) {
         if ("carId" in alloc && "orderId" in alloc) {
+          const endAt = db.extractElem(
+            await conn.execute(
+              "SELECT endAt FROM orderTable \
+              WHERE orderId = ? FOR UPDATE",
+              [alloc["orderId"]]
+            )
+          );
           const car = db.extractElem(
             await db.executeTran(
               conn,
               "SELECT nowPoint, status FROM carTable \
-              WHERE carId = ? LOCK IN SHARE MODE",
+              WHERE carId = ? FOR UPDATE",
               [alloc["carId"]]
-            )
-          );
-          const endAt = db.extractElem(
-            await conn.execute(
-              "SELECT endAt FROM orderTable \
-              WHERE orderId = ? LOCK IN SHARE MODE",
-              [alloc["orderId"]]
             )
           );
           if (car !== undefined && endAt !== undefined) {
@@ -150,14 +157,14 @@ export async function allocatedCarTran(): Promise<boolean> {
       const route = db.extractElem(
         await db.executeTran(
           conn,
-          "SELECT route FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE",
+          "SELECT route FROM orderTable WHERE orderId = ? FOR UPDATE",
           [realloc.orderId]
         )
       );
       if (route !== undefined) {
         if ("route" in route) {
           console.log(route["route"][0][0]);
-          tmpAstar = await astar.Astar(
+          tmpAstar = astar.Astar(
             realloc.nowPoint,
             route["route"][0][0],
             passPoints
@@ -165,8 +172,8 @@ export async function allocatedCarTran(): Promise<boolean> {
           if (tmpAstar !== null) {
             await db.executeTran(
               conn,
-              "UPDATE carTable SET status = 3 WHERE carId = ?",
-              [realloc.carId]
+              "UPDATE userTable SET carId = ? WHERE orderId = ?",
+              [realloc.carId, realloc.orderId]
             );
             await db.executeTran(
               conn,
@@ -177,8 +184,8 @@ export async function allocatedCarTran(): Promise<boolean> {
             );
             await db.executeTran(
               conn,
-              "UPDATE userTable SET carId = ? WHERE orderId = ?",
-              [realloc.carId, realloc.orderId]
+              "UPDATE carTable SET status = 3 WHERE carId = ?",
+              [realloc.carId]
             );
             allocFlag = true;
           }
@@ -191,13 +198,13 @@ export async function allocatedCarTran(): Promise<boolean> {
           await db.executeTran(
             conn,
             "SELECT carId, nowPoint, battery FROM carTable \
-            WHERE status = 1 AND battery >= 30 LOCK IN SHARE MODE"
+            WHERE status = 1 AND battery >= 30 FOR UPDATE"
           )
         );
         if (route !== undefined && car !== undefined) {
           for (const carId of car) {
             if ("route" in route && "carId" in carId && "nowPoint" in carId) {
-              tmpAstar = await astar.Astar(
+              tmpAstar = astar.Astar(
                 carId["nowPoint"],
                 route["route"][0][0],
                 passPoints
@@ -205,13 +212,8 @@ export async function allocatedCarTran(): Promise<boolean> {
               if (tmpAstar !== null) {
                 await db.executeTran(
                   conn,
-                  "UPDATE carTable SET status = 3 WHERE carId = ?",
-                  [carId["carId"]]
-                );
-                await db.executeTran(
-                  conn,
-                  "UPDATE carTable SET status = 1 WHERE carId = ?",
-                  [realloc.carId]
+                  "UPDATE userTable SET carId = ? WHERE orderId = ?",
+                  [carId["carId"], realloc.orderId]
                 );
                 await db.executeTran(
                   conn,
@@ -222,8 +224,13 @@ export async function allocatedCarTran(): Promise<boolean> {
                 );
                 await db.executeTran(
                   conn,
-                  "UPDATE userTable SET carId = ? WHERE orderId = ?",
-                  [carId["carId"], realloc.orderId]
+                  "UPDATE carTable SET status = 3 WHERE carId = ?",
+                  [carId["carId"]]
+                );
+                await db.executeTran(
+                  conn,
+                  "UPDATE carTable SET status = 1 WHERE carId = ?",
+                  [realloc.carId]
                 );
                 allocFlag = true;
               }
@@ -238,19 +245,19 @@ export async function allocatedCarTran(): Promise<boolean> {
     await conn.rollback();
     console.log(err);
   } finally {
+    await conn.query(unlock);
     conn.release();
   }
-  return allocFlag;
+  setTimeout(() => allocatedCarTran(), 5000);
 }
 
 // Monitoring of cars communication cycles
-export async function intervalCarTran(): Promise<boolean> {
-  const result = false;
+export async function intervalCarTran() {
   const intervalSql =
     "UPDATE carTable SET intervalCount = intervalCount + 1 \
     WHERE lastAt <= SUBTIME(NOW(), '00:00:10') && intevalCount < 3";
   const errorCarsSql =
-    "SELECT carId FROM carTable WHERE intevalCount = 3 LOCK IN SHARE MODE";
+    "SELECT carId FROM carTable WHERE intevalCount = 3 FOR UPDATE";
   const stopCarSql = "UPDATE carTable SET status = 5 WHERE carId = ?";
   const stopOrderSql =
     "SELECT orderId FROM userTable \
@@ -267,12 +274,12 @@ export async function intervalCarTran(): Promise<boolean> {
     if (cars !== undefined) {
       for (const err of cars) {
         if ("carId" in err) {
-          await db.executeTran(conn, stopCarSql, [err["carId"]]);
           const order = db.extractElem(
             await db.executeTran(conn, stopOrderSql, err["carId"])
           );
+          await db.executeTran(conn, stopCarSql, [err["carId"]]);
           if (order !== undefined && "userId" in order) {
-            await db.executeTran(conn, updateOrderSql);
+            await db.executeTran(conn, updateOrderSql, [order["orderId"]]);
           }
         }
       }
@@ -284,21 +291,21 @@ export async function intervalCarTran(): Promise<boolean> {
   } finally {
     conn.release();
   }
-  return result;
+  setTimeout(() => intervalCarTran(), 5000);
 }
 
-export async function intervalUserTran(): Promise<boolean> {
+export async function intervalUserTran() {
   const getUserSql =
     "SELECT userId, orderId, carId FROM userTable \
     WHERE startAt <= SUBTIME(NOW(), '12:00:00') AND endAt IS NULL \
-    LOCK IN SHARE MODE";
+    FOR UPDATE";
+  const freeUserSql = "UPDATE userTable SET endAt = NOW() WHERE userId = ?";
   const freeOrderSql =
     "UPDATE orderTable SET nextPoint = NULL, arrival = TRUE, \
     finish = TRUE, endAt = NOW() WHERE orderId = ?";
   const freeCarSql =
     "UPDATE carTable SET status = 1 \
     WHERE carId = ? AND (status != 5 OR status != 6)";
-  const freeUserSql = "UPDATE userTable SET endAt = NOW() WHERE userId = ?";
   const conn = await db.createNewConn();
 
   try {
@@ -307,14 +314,14 @@ export async function intervalUserTran(): Promise<boolean> {
     if (userTable !== undefined) {
       for (const elem of userTable) {
         if ("userId" in elem && "orderId" in elem && "carId" in elem) {
+          if (elem["userId"] !== null) {
+            await db.executeTran(conn, freeUserSql, [elem["userId"]]);
+          }
           if (elem["orderId"] !== null) {
             await db.executeTran(conn, freeOrderSql, [elem["orderId"]]);
           }
           if (elem["carId"] !== null) {
             await db.executeTran(conn, freeCarSql, [elem["carId"]]);
-          }
-          if (elem["userId"] !== null) {
-            await db.executeTran(conn, freeUserSql, [elem["userId"]]);
           }
         }
       }
@@ -326,7 +333,7 @@ export async function intervalUserTran(): Promise<boolean> {
   } finally {
     conn.release();
   }
-  return true;
+  setTimeout(() => intervalUserTran(), 5000);
 }
 
 // Monitoring of order activity
@@ -356,14 +363,14 @@ export async function progressTran(
   // carId から車を進ませるのに必要な情報を取得
   const getOrderIdSql =
     "SELECT orderId FROM userTable \
-    WHERE carId = UUID_TO_BIN(?, 1) AND endAt IS NULL LOCK IN SHARE MODE";
+    WHERE carId = UUID_TO_BIN(?, 1) AND endAt IS NULL FOR UPDATE";
   const getStatusSql =
     "SELECT status, sequence FROM carTable \
-    WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
+    WHERE carId = UUID_TO_BIN(?, 1) FOR UPDATE";
   const getParamsSql =
     "SELECT nextPoint, arrival, finish, arrange, carToRoute, route, \
     junkai, pRoute, pPoint FROM orderTable WHERE orderId = ? \
-    LOCK IN SHARE MODE";
+    FOR UPDATE";
   const arrangeOrderSql =
     "UPDATE orderTable SET arrival = TRUE, arrange = TRUE, \
     pRoute = 1, pPoint = 0, nextPoint = ? WHERE orderId = ?";
@@ -400,6 +407,9 @@ export async function progressTran(
     return nextPosition;
   }
 
+  const orderTable = db.extractElem(
+    await db.executeTran(connected, getParamsSql, [orderId])
+  );
   const carTable = db.extractElem(
     await db.executeTran(connected, getStatusSql, [carId])
   );
@@ -410,9 +420,6 @@ export async function progressTran(
     return nextPosition;
   }
 
-  const orderTable = db.extractElem(
-    await db.executeTran(connected, getParamsSql, [orderId])
-  );
   let param: proceed;
   if (
     orderTable !== undefined &&

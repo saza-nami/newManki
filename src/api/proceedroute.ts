@@ -6,33 +6,23 @@ import * as db from "../database";
 import * as global from "./scripts/global";
 import report from "./_report";
 
-const reqUserInfoSql =
-  "SELECT carId, orderId from userTable \
+const reqUserIds =
+  "SELECT carId, orderId FROM userTable \
   WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
-// request order's flags
-const reqOrdersFlagsSql =
-  "SELECT finish, arrival from orderTable WHERE orderId = ? LOCK IN SHARE MODE";
-const reqCarStatusSql =
-  "SELECT status from carTable WHERE carId = ? LOCK IN SHARE MODE";
-const updateCarStatusSql = "UPDATE carTable SET status = 3 WHERE carId = ?";
-const updateArrivalSql = "UPDATE orderTable SET arrival = 0 WHERE orderId = ?";
+const reqOrderFlags =
+  "SELECT finish, arrival FROM orderTable WHERE orderId = ? FOR UPDATE";
+const reqCarStatus = "SELECT status FROM carTable WHERE carId = ? FOR UPDATE";
+const updArrival = "UPDATE orderTable SET arrival = 0 WHERE orderId = ?";
+const updCarStatus = "UPDATE carTable SET status = 3 WHERE carId = ?";
 
 async function proceedRoute(userId: string): Promise<ApiResult> {
-  // return value of API
   const result: ApiResult = { succeeded: false };
-  // check parameter
-  if (typeof userId === "undefined") {
-    return report(result);
-  }
-
-  const conn = await db.createNewConn(); // database connection
-  // begin transaction
+  const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    // check exist user
     if ((await global.existUserTran(conn, userId)) === true) {
       const proceed = db.extractElem(
-        await db.executeTran(conn, reqUserInfoSql, [userId])
+        await db.executeTran(conn, reqUserIds, [userId])
       );
       if (
         proceed !== undefined &&
@@ -42,27 +32,30 @@ async function proceedRoute(userId: string): Promise<ApiResult> {
         proceed["orderId"] !== undefined
       ) {
         const order = db.extractElem(
-          await db.executeTran(conn, reqOrdersFlagsSql, [proceed["orderId"]])
+          await db.executeTran(conn, reqOrderFlags, [proceed["orderId"]])
         );
         const status = db.extractElem(
-          await db.executeTran(conn, reqCarStatusSql, [proceed["carId"]])
+          await db.executeTran(conn, reqCarStatus, [proceed["carId"]])
         );
         if (
           order !== undefined &&
           status !== undefined &&
           "finish" in order &&
-          !order["finish"] &&
+          order["finish"] === 0 &&
           "arrival" in order &&
-          order["arrival"] &&
+          order["arrival"] === 1 &&
           "status" in status &&
           status["status"] === 4
         ) {
-          console.log(order["finish"]);
-          await db.executeTran(conn, updateCarStatusSql, [proceed["carId"]]);
-          await db.executeTran(conn, updateArrivalSql, [proceed["orderId"]]);
+          await db.executeTran(conn, updArrival, [proceed["orderId"]]);
+          await db.executeTran(conn, updCarStatus, [proceed["carId"]]);
           result.succeeded = true;
+        } else {
+          result.reason = "The car you are using is not at the stop.";
         }
       }
+    } else {
+      result.reason = "Illegal user.";
     }
     await conn.commit();
   } catch (err) {
@@ -76,7 +69,11 @@ async function proceedRoute(userId: string): Promise<ApiResult> {
 
 export default express.Router().post("/proceedRoute", async (req, res) => {
   try {
-    res.json(await proceedRoute(req.body.userId));
+    if (typeof req.body.userId === "undefined") {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    } else {
+      res.json(await proceedRoute(req.body.userId));
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }

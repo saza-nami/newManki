@@ -15,58 +15,60 @@ interface RouteInfo extends ApiResult {
   passableNames?: PassableName[];
 }
 
-const reqRouteNames =
+const getRouteNames =
   "SELECT routeName, route FROM routeTable LOCK IN SHARE MODE";
 
 async function routeNames(userId: string): Promise<RouteInfo> {
-  // return value of API
   const result: RouteInfo = { succeeded: false };
-  // check parameter
-  if (typeof userId === "undefined") {
-    return report(result);
-  }
-
-  const conn = await db.createNewConn(); // database connection
-  // begin transaction
+  const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
-      const rows = db.extractElems(await db.executeTran(conn, reqRouteNames));
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
+      const rows = db.extractElems(await db.executeTran(conn, getRouteNames));
       const passableNames: PassableName[] = [];
 
       if (rows !== undefined) {
-        for (const elem of rows) {
-          if ("routeName" in elem && "route" in elem) {
-            const routeName = elem["routeName"];
-            const route = JSON.parse(elem["route"]);
-            let available: boolean = true;
-            for (const points of route) {
-              available = true;
-              for (let i = 0; i < points.length - 1; i++) {
-                console.log(points[i], points[i + 1]);
-                if (
-                  map.isReachable(points[i], points[i + 1], passPoints) ===
-                  false
-                ) {
-                  console.log(i);
-                  available = false;
+        if (rows.length > 0) {
+          for (const elem of rows) {
+            if (
+              "routeName" in elem &&
+              elem["routeName"] !== undefined &&
+              "route" in elem &&
+              elem["route"] !== undefined
+            ) {
+              const routeName = elem["routeName"];
+              const route = JSON.parse(elem["route"]);
+              let available: boolean = true;
+              for (const points of route) {
+                available = true;
+                for (let i = 0; i < points.length - 1; i++) {
+                  if (
+                    map.isReachable(points[i], points[i + 1], passPoints) ===
+                    false
+                  ) {
+                    available = false;
+                    break;
+                  }
+                }
+                if (!available) {
                   break;
                 }
               }
-              if (!available) {
-                break;
-              }
+              passableNames.push({
+                routeName: routeName,
+                available: available,
+              });
+              result.succeeded = true;
+              result.passableNames = passableNames;
             }
-            passableNames.push({
-              routeName: routeName,
-              available: available,
-            });
           }
+        } else {
+          result.reason = "None of the routes exist.";
         }
       }
-      result.succeeded = true;
-      result.passableNames = passableNames;
+    } else {
+      result.reason = "Illegal user.";
     }
     await conn.commit();
   } catch (err) {
@@ -80,7 +82,11 @@ async function routeNames(userId: string): Promise<RouteInfo> {
 
 export default express.Router().post("/routeName", async (req, res) => {
   try {
-    res.json(await routeNames(req.body.userId));
+    if (typeof req.body.userId === "undefined") {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    } else {
+      res.json(await routeNames(req.body.userId));
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }

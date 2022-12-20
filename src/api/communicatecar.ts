@@ -1,10 +1,12 @@
 // 対車両通信 API
 import express from "express";
-import { ApiResult, Position, proceed, Access } from "../types";
+import { ApiResult, Position, Access, PassablePoint } from "../types";
+import * as astar from "./scripts/notNotAstar";
 import * as db from "../database";
 import * as global from "./scripts/global";
-import report from "./_report";
+import * as map from "./scripts/map";
 import * as tran from "./scripts/transaction";
+import report from "./_report";
 
 interface ReplyInfo extends ApiResult {
   responce?: string;
@@ -13,20 +15,19 @@ interface ReplyInfo extends ApiResult {
 }
 
 let lastLog: Access = { date: [0], ipAddress: ["anyonyomarubobo"] };
-// lock tables
 const lockTablesSql = "LOCK TABLES carTable WRITE";
-// unlock tables
 const unlockTablesSql = "UNLOCK TABLES";
-const insertCarSql =
+const addCar =
   "INSERT INTO carTable (sequence, nowPoint, battery) \
   VALUES (?, ?, ?)";
-const reqLastCarIdSql =
+const reqLastCarId =
   "SELECT BIN_TO_UUID(carId, 1) FROM carTable \
   ORDER BY carId DESC, lastAt DESC LIMIT 1 LOCK IN SHARE MODE";
-const updateCarInfoSql =
+const reqCarStatus = "SELECT status FROM carTable WHERE carId = UUID_TO_BIN";
+const updCarInfo =
   "UPDATE carTable SET sequence = ?, nowPoint = ?, battery = ?, \
   lastAt = NOW() WHERE carId = UUID_TO_BIN(?, 1)";
-const haltCarSql =
+const haltCar =
   "UPDATE carTable SET status = 5, sequence = ?, nowPoint = ?, battery = ?, \
   lastAt = NOW() WHERE carId = UUID_TO_BIN(?, 1)";
 
@@ -39,7 +40,7 @@ async function createReply(
 ): Promise<ReplyInfo> {
   const result: ReplyInfo = { succeeded: false };
   const rndSeq = Math.trunc(Math.random() * 4294967294) + 1; // FIXME
-  // check input
+  let passPoints: PassablePoint[];
   if (
     typeof request === "undefined" &&
     typeof location === "undefined" &&
@@ -49,15 +50,14 @@ async function createReply(
   }
 
   const conn = await db.createNewConn();
-
   try {
     await conn.beginTransaction();
     if (request === "hello") {
       if (typeof location !== undefined && typeof battery !== undefined) {
         await conn.query(lockTablesSql);
-        await db.executeTran(conn, insertCarSql, [rndSeq, location, battery]);
+        await db.executeTran(conn, addCar, [rndSeq, location, battery]);
         const carInfo = db.extractElem(
-          await db.executeTran(conn, reqLastCarIdSql)
+          await db.executeTran(conn, reqLastCarId)
         );
         if (carInfo !== undefined && "BIN_TO_UUID(carId, 1)" in carInfo) {
           result.succeeded = true;
@@ -73,23 +73,28 @@ async function createReply(
         ) {
           if (request === "next") {
             /* 車の状態(carTable.status)の確認を行う */
-            result.location = await tran.progressTran(conn, carId);
+            // const carStatus = db.extractElem(await db.executeTran(conn, ,[carId]))
             result.succeeded = true;
+            result.location = await tran.progressTran(conn, carId);
           } else if (request === "ping") {
             /* 車の状態(carTable.status)の確認を行う */
-            await db.executeTran(conn, updateCarInfoSql, [
+            await db.executeTran(conn, updCarInfo, [
               rndSeq,
               location,
               battery,
               carId,
             ]);
+            result.succeeded = true;
           } else if (request === "halt") {
-            await db.executeTran(conn, haltCarSql, [
+            await db.executeTran(conn, haltCar, [
               rndSeq,
               location,
               battery,
               carId,
             ]);
+            result.succeeded = true;
+          } else if (request === "astar") {
+            passPoints = await map.getPassPos(conn);
           }
           result.sequence = rndSeq;
         }
@@ -102,6 +107,8 @@ async function createReply(
   } finally {
     await conn.query(unlockTablesSql);
     conn.release();
+  }
+  if (request === "astar") {
   }
   return report(result);
 }
