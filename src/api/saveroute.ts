@@ -39,23 +39,16 @@ async function saveRoute(
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
-      let reached = true;
       // 経路チェック
-      for (let i = 0; i < route.length; i++) {
-        for (let j = 0; j < route[i].length - 1; j++) {
-          if (
-            map.isReachable(route[i][j], route[i][j + 1], passPoints) === false
-          ) {
-            reached = false;
-            result.message =
-              "RouteNo." + i + " PointNo." + j + " could not be reached.";
-          }
-          if (!reached) break;
-        }
-        if (!reached) break;
-      }
-
-      if (reached) {
+      const checkResult = map.checkRoute(route, passPoints);
+      if (checkResult.reason !== undefined) {
+        result.message =
+          "RouteNo." +
+          checkResult.reason.route +
+          " PointNo." +
+          checkResult.reason.pos +
+          " could not be reached.";
+      } else {
         const dest = global.routeToDest(route);
         await db.executeTran(conn, insertRouteSql, [
           routeName,

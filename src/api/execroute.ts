@@ -49,7 +49,7 @@ async function reserveRoute(
     if ((await global.existUserTran(conn, userId)) === true) {
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
       // check route in passable area
-      if (map.checkRoute(route, passPoints) === true) {
+      if (map.checkRoute(route, passPoints).available === true) {
         // insert route in the database
         const dest = global.routeToDest(route);
         const existOrder = db.extractElem(
