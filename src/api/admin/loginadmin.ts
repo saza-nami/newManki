@@ -38,7 +38,11 @@ async function loginAdmin(
       await db.executeTran(conn, reqAdminPassSql, [adminName])
     );
 
-    if (admin !== undefined && "adminPassHash" in admin) {
+    if (
+      admin !== undefined &&
+      "adminPassHash" in admin &&
+      admin["adminPassHash"] !== undefined
+    ) {
       if (await bcrypt.compare(adminPass, admin["adminPassHash"])) {
         await db.executeTran(conn, updateAdminSql, [adminName]);
         const adminId = db.extractElem(

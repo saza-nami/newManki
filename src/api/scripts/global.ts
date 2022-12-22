@@ -43,14 +43,12 @@ export async function existCarTran(
   // carId が存在するか
   const existCarSql =
     "SELECT COUNT(*) FROM carTable WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
-  if (Array.isArray(bin) && Array.isArray(bin[0])) {
-    if ("UUID" in bin[0][0] && bin[0][0]["UUID"] === 1) {
-      const rows = await db.executeTran(connected, existCarSql, [carId]);
-      if (Array.isArray(rows) && Array.isArray(rows[0])) {
-        if ("COUNT(*)" in rows[0][0] && rows[0][0]["COUNT(*)"] === 1) {
-          return true;
-        }
-      }
+  if (bin !== undefined && "UUID" in bin && bin["UUID"] === 1) {
+    const rows = db.extractElem(
+      await db.executeTran(connected, existCarSql, [carId])
+    );
+    if (rows !== undefined && "COUNT(*)" in rows && rows["COUNT(*)"] === 1) {
+      return true;
     }
   }
   return false;
@@ -62,11 +60,12 @@ export async function authSequenceTran(
   sequence: number
 ): Promise<boolean> {
   const authSequenceSql =
-    "SELECT sequence FROM carTable WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
+    "SELECT sequence FROM carTable \
+    WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
   const row = db.extractElem(
     await db.executeTran(conn, authSequenceSql, [carId])
   );
-  if (row !== undefined && "sequence" in row) {
+  if (row !== undefined && "sequence" in row && row["sequence"] !== undefined) {
     if (row["sequence"] === sequence) {
       return true;
     }

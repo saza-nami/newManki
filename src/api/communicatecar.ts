@@ -1,27 +1,34 @@
 // 対車両通信 API
 import express from "express";
-import { ApiResult, Position, Access, PassablePoint } from "types";
+import { ApiResult, Position, Access } from "types";
 import * as db from "database";
 import * as global from "api/scripts/global";
 import report from "api/_report";
 import * as tran from "api/scripts/transaction";
 
 interface ReplyInfo extends ApiResult {
-  responce?: string;
-  location?: Position;
+  response?: string;
+  destination?: Position;
   sequence?: number;
 }
 
 let lastLog: Access = { date: [0], ipAddress: ["anyonyomarubobo"] };
-const lockTablesSql = "LOCK TABLES carTable WRITE";
-const unlockTablesSql = "UNLOCK TABLES";
+const lockCW = "LOCK TABLES carTable WRITE";
+const unlock = "UNLOCK TABLES";
 const addCar =
   "INSERT INTO carTable (sequence, nowPoint, battery) \
   VALUES (?, ?, ?)";
 const reqLastCarId =
   "SELECT BIN_TO_UUID(carId, 1) FROM carTable \
   ORDER BY carId DESC, lastAt DESC LIMIT 1 LOCK IN SHARE MODE";
-const reqCarStatus = "SELECT status FROM carTable WHERE carId = UUID_TO_BIN";
+const reqOrderId =
+  "SELECT orderId FROM userTable \
+  WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
+const reqNext =
+  "SELECE nextPoint FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE";
+const reqCarInfo =
+  "SELECT status, nowPoint FROM carTable \
+  WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
 const updCarInfo =
   "UPDATE carTable SET sequence = ?, nowPoint = ?, battery = ?, \
   lastAt = NOW() WHERE carId = UUID_TO_BIN(?, 1)";
@@ -30,36 +37,32 @@ const haltCar =
   lastAt = NOW() WHERE carId = UUID_TO_BIN(?, 1)";
 
 async function createReply(
-  carId: string,
   request: string,
   location: Position,
-  sequence: number,
-  battery: number
+  battery: number,
+  carId?: string,
+  sequence?: number
 ): Promise<ReplyInfo> {
   const result: ReplyInfo = { succeeded: false };
   const rndSeq = Math.trunc(Math.random() * 4294967294) + 1; // FIXME
-  let passPoints: PassablePoint[];
-  if (
-    typeof request === "undefined" &&
-    typeof location === "undefined" &&
-    typeof battery === "undefined"
-  ) {
-    return report(result);
-  }
 
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
     if (request === "hello") {
-      if (typeof location !== undefined && typeof battery !== undefined) {
-        await conn.query(lockTablesSql);
+      if (location !== undefined && battery !== undefined) {
+        await conn.query(lockCW);
         await db.executeTran(conn, addCar, [rndSeq, location, battery]);
         const carInfo = db.extractElem(
           await db.executeTran(conn, reqLastCarId)
         );
-        if (carInfo !== undefined && "BIN_TO_UUID(carId, 1)" in carInfo) {
+        if (
+          carInfo !== undefined &&
+          "BIN_TO_UUID(carId, 1)" in carInfo &&
+          carInfo["BIN_TO_UUID(carId, 1)"] !== undefined
+        ) {
           result.succeeded = true;
-          result.responce = carInfo["BIN_TO_UUID(carId, 1)"];
+          result.response = carInfo["BIN_TO_UUID(carId, 1)"];
           result.sequence = rndSeq;
         }
       }
@@ -69,20 +72,115 @@ async function createReply(
           (await global.existCarTran(conn, carId)) &&
           (await global.authSequenceTran(conn, carId, sequence))
         ) {
+          /* 車が実行中の命令を取得 */
+          const orderId = db.extractElem(
+            await db.executeTran(conn, reqOrderId, [carId])
+          );
+          /* 車の状態(carTable.status)の確認を行う */
+          const carInfo = db.extractElem(
+            await db.executeTran(conn, reqCarInfo, [carId])
+          );
           if (request === "next") {
-            /* 車の状態(carTable.status)の確認を行う */
-            // const carStatus = db.extractElem(await db.executeTran(conn, ,[carId]))
-            result.succeeded = true;
-            result.location = await tran.progressTran(conn, carId);
+            if (
+              carInfo !== undefined &&
+              "status" in carInfo &&
+              carInfo["status"] !== undefined
+            ) {
+              result.succeeded = true;
+              if (
+                carInfo["status"] === 5 ||
+                carInfo["status"] === 6 ||
+                carInfo["status"] === 7
+              ) {
+                result.response = "halt";
+              } else {
+                result.sequence = rndSeq;
+                if (
+                  carInfo["status"] === 1 ||
+                  carInfo["status"] === 2 ||
+                  carInfo["status"] === 4
+                ) {
+                  result.response = "stop";
+                  if (
+                    orderId !== undefined &&
+                    "orderId" in orderId &&
+                    orderId["orderId"] !== undefined
+                  ) {
+                    const destination = db.extractElem(
+                      await db.executeTran(conn, reqNext, [orderId["orderId"]])
+                    );
+                    if (
+                      destination !== undefined &&
+                      "nextPoint" in destination &&
+                      destination["nextPoint"] !== undefined
+                    ) {
+                      result.destination = destination["nextPoint"];
+                    }
+                  }
+                }
+                if (carInfo["status"] === 3) {
+                  result.response = "next";
+                  result.destination = await tran.progressTran(
+                    conn,
+                    carId,
+                    carInfo["status"]
+                  );
+                }
+              }
+            }
           } else if (request === "ping") {
-            /* 車の状態(carTable.status)の確認を行う */
-            await db.executeTran(conn, updCarInfo, [
-              rndSeq,
-              location,
-              battery,
-              carId,
-            ]);
-            result.succeeded = true;
+            if (
+              carInfo !== undefined &&
+              "status" in carInfo &&
+              carInfo["status"] !== undefined
+            ) {
+              result.succeeded = true;
+              if (
+                carInfo["status"] === 5 ||
+                carInfo["status"] === 6 ||
+                carInfo["status"] === 7
+              ) {
+                result.response = "halt";
+              } else {
+                await db.executeTran(conn, updCarInfo, [
+                  rndSeq,
+                  location,
+                  battery,
+                  carId,
+                ]);
+                result.sequence = rndSeq;
+                console.log(orderId);
+                if (
+                  orderId !== undefined &&
+                  "orderId" in orderId &&
+                  orderId["orderId"] !== undefined
+                ) {
+                  const destination = db.extractElem(
+                    await db.executeTran(conn, reqNext, [orderId["orderId"]])
+                  );
+                  console.log(destination);
+                  if (
+                    destination !== undefined &&
+                    "nextPoint" in destination &&
+                    destination["nextPoint"] !== undefined
+                  ) {
+                    result.destination = destination["nextPoint"];
+                  }
+                }
+                if (carInfo["status"] === 3) {
+                  result.response = "next";
+                } else if (
+                  carInfo["status"] === 1 &&
+                  "nowPoint" in carInfo &&
+                  carInfo["nowPoint"] !== undefined
+                ) {
+                  result.response = "stop";
+                  result.destination = carInfo["nowPoint"];
+                } else if (carInfo["status"] === 2 || carInfo["status"] === 4) {
+                  result.response = "stop";
+                }
+              }
+            }
           } else if (request === "halt") {
             await db.executeTran(conn, haltCar, [
               rndSeq,
@@ -91,10 +189,10 @@ async function createReply(
               carId,
             ]);
             result.succeeded = true;
-          } else if (request === "astar") {
-            passPoints = await map.getPassPos(conn);
+            result.response = "halt";
           }
-          result.sequence = rndSeq;
+        } else {
+          console.log("auth error");
         }
       }
     }
@@ -103,10 +201,8 @@ async function createReply(
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTablesSql);
+    await conn.query(unlock);
     conn.release();
-  }
-  if (request === "astar") {
   }
   return report(result);
 }
@@ -144,16 +240,33 @@ export default express.Router().post("/sendCarInfo", async (req, res) => {
         lastLog.ipAddress.push(req.ip);
       }
     }
-
-    res.json(
-      await createReply(
-        req.body.carId,
-        req.body.request,
-        req.body.location,
-        req.body.sequence,
-        req.body.battery
-      )
-    );
+    if (
+      req.body.request === "hello" &&
+      typeof req.body.location !== "undefined" &&
+      typeof req.body.battery !== "undefined"
+    ) {
+      res.json(
+        await createReply(req.body.request, req.body.location, req.body.battery)
+      );
+    } else if (
+      typeof req.body.request !== "undefined" ||
+      typeof req.body.location !== "undefined" ||
+      typeof req.body.battery !== "undefined" ||
+      typeof req.body.carId !== "undefined" ||
+      typeof req.body.sequence !== "undefined"
+    ) {
+      res.json(
+        await createReply(
+          req.body.request,
+          req.body.location,
+          req.body.battery,
+          req.body.carId,
+          req.body.sequence
+        )
+      );
+    } else {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }
