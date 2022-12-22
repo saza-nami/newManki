@@ -39,9 +39,9 @@ async function routeNames(userId: string): Promise<RouteInfo> {
               available: checkResult.available,
             });
           }
-        } else {
-          result.reason = "None of the routes exist.";
         }
+      } else {
+        result.reason = "None of the routes exist.";
       }
     } else {
       result.reason = "Illegal user.";
