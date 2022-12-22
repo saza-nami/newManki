@@ -357,16 +357,14 @@ export async function monitorOrderTran(): Promise<number[]> {
 // Advance car
 export async function progressTran(
   connected: mysql.PoolConnection,
-  carId: string
+  carId: string,
+  status: number
 ): Promise<Position | undefined> {
   let nextPosition: Position | undefined = undefined;
   // carId から車を進ませるのに必要な情報を取得
   const getOrderIdSql =
     "SELECT orderId FROM userTable \
     WHERE carId = UUID_TO_BIN(?, 1) AND endAt IS NULL FOR UPDATE";
-  const getStatusSql =
-    "SELECT status, sequence FROM carTable \
-    WHERE carId = UUID_TO_BIN(?, 1) FOR UPDATE";
   const getParamsSql =
     "SELECT nextPoint, arrival, finish, arrange, carToRoute, route, \
     junkai, pRoute, pPoint FROM orderTable WHERE orderId = ? \
@@ -401,7 +399,11 @@ export async function progressTran(
     await db.executeTran(connected, getOrderIdSql, [carId])
   );
   let orderId: number = 0;
-  if (userTable !== undefined && "orderId" in userTable) {
+  if (
+    userTable !== undefined &&
+    "orderId" in userTable &&
+    userTable["orderId"] !== undefined
+  ) {
     orderId = userTable["orderId"];
   } else {
     return nextPosition;
@@ -410,17 +412,6 @@ export async function progressTran(
   const orderTable = db.extractElem(
     await db.executeTran(connected, getParamsSql, [orderId])
   );
-  const carTable = db.extractElem(
-    await db.executeTran(connected, getStatusSql, [carId])
-  );
-  let status: number = 0;
-  if (carTable !== undefined && "status" in carTable) {
-    status = carTable["status"];
-  } else {
-    return nextPosition;
-  }
-
-  let param: proceed;
   if (
     orderTable !== undefined &&
     "nextPoint" in orderTable &&
@@ -433,7 +424,7 @@ export async function progressTran(
     "pRoute" in orderTable &&
     "pPoint" in orderTable
   ) {
-    param = {
+    let param: proceed = {
       nextPoint: orderTable["nextPoint"],
       arrival: orderTable["arrival"] ? true : false,
       finish: orderTable["finish"] ? true : false,
