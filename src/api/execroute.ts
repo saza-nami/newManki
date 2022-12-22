@@ -1,11 +1,11 @@
 // 命令を実行するときに呼ばれるAPI
 
 import express from "express";
-import { ApiResult, Position, PassablePoint } from "../types";
-import * as db from "../database";
-import * as global from "./scripts/global";
-import * as map from "./scripts/map";
-import report from "./_report";
+import { ApiResult, Position, PassablePoint } from "types";
+import * as db from "database";
+import * as global from "api/scripts/global";
+import * as map from "api/scripts/map";
+import report from "api/_report";
 
 interface ExecRoute extends ApiResult {
   message?: string;
@@ -39,7 +39,9 @@ async function reserveRoute(
     await conn.query(lockUWOWPR);
     if ((await global.existUserTran(conn, userId)) === true) {
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
-      if (map.checkRoute(route, passPoints) === true) {
+      // check route in passable area
+      if (map.checkRoute(route, passPoints).available === true) {
+        // insert route in the database
         const dest = global.routeToDest(route);
         const existOrder = db.extractElem(
           await db.executeTran(conn, reqUserOrderId, [userId])

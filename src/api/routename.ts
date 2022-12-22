@@ -1,11 +1,11 @@
 // 状態遷移図の既存ルート選択で呼ばれるAPI
 
 import express from "express";
-import { ApiResult, PassablePoint } from "../types";
-import * as db from "../database";
-import * as global from "./scripts/global";
-import * as map from "./scripts/map";
-import report from "./_report";
+import { ApiResult, PassablePoint } from "types";
+import * as db from "database";
+import * as global from "api/scripts/global";
+import * as map from "api/scripts/map";
+import report from "api/_report";
 
 interface PassableName {
   routeName: string;
@@ -29,39 +29,15 @@ async function routeNames(userId: string): Promise<RouteInfo> {
       const passableNames: PassableName[] = [];
 
       if (rows !== undefined) {
-        if (rows.length > 0) {
-          for (const elem of rows) {
-            if (
-              "routeName" in elem &&
-              elem["routeName"] !== undefined &&
-              "route" in elem &&
-              elem["route"] !== undefined
-            ) {
-              const routeName = elem["routeName"];
-              const route = JSON.parse(elem["route"]);
-              let available: boolean = true;
-              for (const points of route) {
-                available = true;
-                for (let i = 0; i < points.length - 1; i++) {
-                  if (
-                    map.isReachable(points[i], points[i + 1], passPoints) ===
-                    false
-                  ) {
-                    available = false;
-                    break;
-                  }
-                }
-                if (!available) {
-                  break;
-                }
-              }
-              passableNames.push({
-                routeName: routeName,
-                available: available,
-              });
-              result.succeeded = true;
-              result.passableNames = passableNames;
-            }
+        for (const elem of rows) {
+          if ("routeName" in elem && "route" in elem) {
+            const routeName = elem["routeName"];
+            const route = JSON.parse(elem["route"]);
+            const checkResult = map.checkRoute(route, passPoints);
+            passableNames.push({
+              routeName: routeName,
+              available: checkResult.available,
+            });
           }
         } else {
           result.reason = "None of the routes exist.";

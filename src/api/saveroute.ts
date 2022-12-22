@@ -1,11 +1,11 @@
 // 状態遷移図の経路保存で呼ばれるAPI
 
 import express from "express";
-import { ApiResult, Position, PassablePoint } from "../types";
-import * as db from "../database";
-import * as global from "./scripts/global";
-import * as map from "./scripts/map";
-import report from "./_report";
+import { ApiResult, Position, PassablePoint } from "types";
+import * as db from "database";
+import * as global from "api/scripts/global";
+import * as map from "api/scripts/map";
+import report from "api/_report";
 
 interface SaveRoute extends ApiResult {
   routeName?: string;
@@ -28,21 +28,16 @@ async function saveRoute(
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
-      let reached = true;
-      for (let i = 0; i < route.length; i++) {
-        for (let j = 0; j < route[i].length - 1; j++) {
-          if (
-            map.isReachable(route[i][j], route[i][j + 1], passPoints) === false
-          ) {
-            reached = false;
-            result.message =
-              "RouteNo." + i + " PointNo." + j + " could not be reached.";
-          }
-          if (!reached) break;
-        }
-        if (!reached) break;
-      }
-      if (reached) {
+      // 経路チェック
+      const checkResult = map.checkRoute(route, passPoints);
+      if (checkResult.reason !== undefined) {
+        result.message =
+          "RouteNo." +
+          checkResult.reason.route +
+          " PointNo." +
+          checkResult.reason.pos +
+          " could not be reached.";
+      } else {
         const dest = global.routeToDest(route);
         await db.executeTran(conn, addRoute, [routeName, route, dest, junkai]);
         result.succeeded = true;

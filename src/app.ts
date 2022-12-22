@@ -1,8 +1,8 @@
 import express from "express";
 import cors from "cors";
-import routers from "./api/_routers";
-import * as admin from "./api/admin/admin";
-import * as tran from "./api/scripts/transaction";
+import routers from "api/_routers";
+import * as admin from "api/admin/admin";
+import * as tran from "api/scripts/transaction";
 
 const app = express();
 const port = 3001;

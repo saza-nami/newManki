@@ -1,11 +1,11 @@
 import { parentPort, workerData } from "worker_threads";
-import { ApiResult, PassablePoint, Position } from "../../types";
-import * as astar from "../scripts/notNotAstar";
-import * as map from "../scripts/map";
-import report from "../_report";
+import { ApiResult, PassablePoint, Position } from "types";
+import * as astar from "api/scripts/notNotAstar";
+import * as map from "api/scripts/map";
+import report from "api/_report";
 
 interface CreateRoute extends ApiResult {
-  route?: Position[] | null;
+  route?: Position[];
   reason?: string;
 }
 
@@ -20,7 +20,7 @@ function thAstar(target: Position[], passPoints: PassablePoint[]): CreateRoute {
     }
   }
 
-  const resultNodes: Position[] | null = [];
+  const resultNodes: Position[] = [];
   const data = target;
   const start = data.shift();
   const end = data.pop();

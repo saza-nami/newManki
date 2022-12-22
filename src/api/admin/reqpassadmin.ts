@@ -1,10 +1,10 @@
 /* 通行可能領域点群を渡すAPI */
 
 import express from "express";
-import { ApiResult, PassablePoint } from "../../types";
-import * as admin from "./admin";
-import * as db from "../../database";
-import report from "../_report";
+import { ApiResult, PassablePoint } from "types";
+import * as admin from "api/admin/admin";
+import * as db from "database";
+import report from "api/_report";
 
 interface IsPassable extends ApiResult {
   passableInfo?: PassableInfo[];

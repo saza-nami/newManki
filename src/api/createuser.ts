@@ -1,9 +1,9 @@
 /* 車を使えるかチェックするところで呼ばれるAPI (サービス利用開始) */
 
 import express from "express";
-import { ApiResult, Access } from "../types";
-import * as db from "../database";
-import report from "./_report";
+import { ApiResult, Access } from "types";
+import * as db from "database";
+import report from "api/_report";
 
 interface CreateUserResult extends ApiResult {
   userId?: string; // UUID
