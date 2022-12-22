@@ -1,10 +1,10 @@
 // 目的地から進ませるときに呼ばれるAPI
 
 import express from "express";
-import { ApiResult } from "../types";
-import * as db from "../database";
-import * as global from "./scripts/global";
-import report from "./_report";
+import { ApiResult } from "types";
+import * as db from "database";
+import * as global from "api/scripts/global";
+import report from "api/_report";
 
 const reqUserIds =
   "SELECT carId, orderId FROM userTable \

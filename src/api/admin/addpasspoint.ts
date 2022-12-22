@@ -1,10 +1,10 @@
 // 通行可能領域登録 API
 
 import express from "express";
-import { ApiResult, PassablePoint } from "../../types";
-import * as admin from "./admin";
-import * as db from "../../database";
-import report from "../_report";
+import { ApiResult, PassablePoint } from "types";
+import * as admin from "api/admin/admin";
+import * as db from "database";
+import report from "api/_report";
 
 const addPassableSql =
   "INSERT INTO passableTable(radius, lat, lng) VALUES(?, ?, ?)";

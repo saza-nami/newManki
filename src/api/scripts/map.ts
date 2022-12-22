@@ -1,33 +1,30 @@
-import { PassablePoint, Position } from "../../types";
+import { PassablePoint, Position } from "types";
 
-import * as db from "../../database";
+import * as db from "database";
 import mysql from "mysql2/promise";
-import * as dirdist from "./dirdist";
+import * as dirdist from "api/scripts/dirdist";
 
 /** 地点探索距離[m] */
 const stanDistance = 1;
-/** 通行可能領域との余裕[m] */
-const margin = 0.3;
 /** 地点生成分解能 */
 const resolution = 18;
 
 /* 経路の実行可能判定 */
 function checkRoute(route: Position[][], passPoints: PassablePoint[]) {
-  let result: boolean = true;
   for (let i = 0; i < route.length; i++) {
     for (let j = 0; j < route[i].length - 1; j++) {
-      if (isReachable(route[i][j], route[i][j + 1], passPoints) === false) {
-        result = false;
+      if (!isReachable(route[i][j], route[i][j + 1], passPoints)) {
+        return {
+          available: false,
+          reason: {
+            route: i,
+            pos: j,
+          },
+        };
       }
-      if (!result) {
-        break;
-      }
-    }
-    if (!result) {
-      break;
     }
   }
-  return result;
+  return { available: true };
 }
 
 /* databaseから通行可能領域点群を取得 */

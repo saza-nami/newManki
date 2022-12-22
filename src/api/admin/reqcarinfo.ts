@@ -1,10 +1,10 @@
 /* 車の情報を渡すAPI */
 
 import express from "express";
-import { ApiResult, Position } from "../../types";
-import * as admin from "./admin";
-import * as db from "../../database";
-import report from "../_report";
+import { ApiResult, Position } from "types";
+import * as admin from "api/admin/admin";
+import * as db from "database";
+import report from "api/_report";
 interface CarInfo {
   carId: number;
   status: number;

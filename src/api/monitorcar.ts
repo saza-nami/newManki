@@ -1,10 +1,10 @@
 // 車を見る画面で呼ばれるAPI
 
 import express from "express";
-import { ApiResult, Position } from "../types";
-import * as db from "../database";
-import * as global from "./scripts/global";
-import report from "./_report";
+import { ApiResult, Position } from "types";
+import * as db from "database";
+import * as global from "api/scripts/global";
+import report from "api/_report";
 
 interface MonitorCar extends ApiResult {
   route?: Position[][];
