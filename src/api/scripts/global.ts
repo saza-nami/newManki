@@ -42,7 +42,7 @@ export async function existCarTran(
   );
   // carId が存在するか
   const existCarSql =
-    "SELECT COUNT(*) from carTable WHERE carId = UUID_TO_BIN(?, 1)";
+    "SELECT COUNT(*) FROM carTable WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
   if (Array.isArray(bin) && Array.isArray(bin[0])) {
     if ("UUID" in bin[0][0] && bin[0][0]["UUID"] === 1) {
       const rows = await db.executeTran(connected, existCarSql, [carId]);
@@ -62,7 +62,7 @@ export async function authSequenceTran(
   sequence: number
 ): Promise<boolean> {
   const authSequenceSql =
-    "SELECT sequence FROM carTable WHERE carId = UUID_TO_BIN(?, 1)";
+    "SELECT sequence FROM carTable WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
   const row = db.extractElem(
     await db.executeTran(conn, authSequenceSql, [carId])
   );
@@ -116,10 +116,9 @@ export async function executeTerminate(
   conn: mysql.PoolConnection,
   userId: string
 ): Promise<boolean> {
-  console.log("TERMINATE");
   const getCarIdSql =
     "SELECT carId FROM userTable \
-    WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
+    WHERE userId = UUID_TO_BIN(?, 1) FOR UPDATE";
   const updateUserSql =
     "UPDATE userTable SET endAt = NOW() \
     WHERE userId = UUID_TO_BIN(?, 1) AND endAt IS NULL";

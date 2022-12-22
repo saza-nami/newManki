@@ -13,6 +13,7 @@ export interface AllocatedCar {
 // API の返り値
 export interface ApiResult {
   succeeded: boolean;
+  reason?: string;
 }
 
 // 地点

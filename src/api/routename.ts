@@ -15,24 +15,17 @@ interface RouteInfo extends ApiResult {
   passableNames?: PassableName[];
 }
 
-const reqRouteNames =
+const getRouteNames =
   "SELECT routeName, route FROM routeTable LOCK IN SHARE MODE";
 
 async function routeNames(userId: string): Promise<RouteInfo> {
-  // return value of API
   const result: RouteInfo = { succeeded: false };
-  // check parameter
-  if (typeof userId === "undefined") {
-    return report(result);
-  }
-
-  const conn = await db.createNewConn(); // database connection
-  // begin transaction
+  const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
-      const rows = db.extractElems(await db.executeTran(conn, reqRouteNames));
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
+      const rows = db.extractElems(await db.executeTran(conn, getRouteNames));
       const passableNames: PassableName[] = [];
 
       if (rows !== undefined) {
@@ -46,10 +39,12 @@ async function routeNames(userId: string): Promise<RouteInfo> {
               available: checkResult.available,
             });
           }
+        } else {
+          result.reason = "None of the routes exist.";
         }
       }
-      result.succeeded = true;
-      result.passableNames = passableNames;
+    } else {
+      result.reason = "Illegal user.";
     }
     await conn.commit();
   } catch (err) {
@@ -63,7 +58,11 @@ async function routeNames(userId: string): Promise<RouteInfo> {
 
 export default express.Router().post("/routeName", async (req, res) => {
   try {
-    res.json(await routeNames(req.body.userId));
+    if (typeof req.body.userId === "undefined") {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    } else {
+      res.json(await routeNames(req.body.userId));
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }

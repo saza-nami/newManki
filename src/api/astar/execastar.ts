@@ -11,9 +11,11 @@ interface CreateRoute extends ApiResult {
 
 function thAstar(target: Position[], passPoints: PassablePoint[]): CreateRoute {
   const result: CreateRoute = { succeeded: false };
+  let point = 0;
   for (const t of target) {
+    point++;
     if (!map.isPassable(t, passPoints)) {
-      console.log(target[0], t);
+      result.reason = "Destination " + point + " is outside the passable area.";
       return report(result);
     }
   }
@@ -41,8 +43,7 @@ function thAstar(target: Position[], passPoints: PassablePoint[]): CreateRoute {
     }
     const last = astar.Astar(cur, end, passPoints);
     if (last === null) {
-      result.reason =
-        "Destination " + (data.indexOf(cur) + 2) + " could not be reached.";
+      result.reason = "The end point could not be reached.";
     } else {
       for (const points of last) {
         resultNodes.push(points);

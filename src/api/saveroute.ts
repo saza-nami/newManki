@@ -12,7 +12,7 @@ interface SaveRoute extends ApiResult {
   message?: string;
 }
 
-const insertRouteSql =
+const addRoute =
   "INSERT INTO routeTable(routeName, route, dest, junkai) \
   VALUES (?, JSON_QUOTE(?), JSON_QUOTE(?), ?)";
 
@@ -23,18 +23,7 @@ async function saveRoute(
   junkai: boolean
 ) {
   const result: SaveRoute = { succeeded: false };
-  // 入力チェック
-  if (
-    typeof userId === "undefined" ||
-    typeof routeName === "undefined" ||
-    typeof route === "undefined" ||
-    typeof junkai === "undefined"
-  ) {
-    return report(result);
-  }
-
   const conn = await db.createNewConn();
-
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
@@ -50,15 +39,12 @@ async function saveRoute(
           " could not be reached.";
       } else {
         const dest = global.routeToDest(route);
-        await db.executeTran(conn, insertRouteSql, [
-          routeName,
-          route,
-          dest,
-          junkai,
-        ]);
+        await db.executeTran(conn, addRoute, [routeName, route, dest, junkai]);
         result.succeeded = true;
         result.routeName = routeName;
       }
+    } else {
+      result.reason = "Illegal user.";
     }
     await conn.commit();
   } catch (err) {
@@ -73,14 +59,23 @@ async function saveRoute(
 
 export default express.Router().post("/saveRoute", async (req, res) => {
   try {
-    res.json(
-      await saveRoute(
-        req.body.userId,
-        req.body.routeName,
-        req.body.data,
-        req.body.junkai
-      )
-    );
+    if (
+      typeof req.body.userId === "undefined" ||
+      typeof req.body.routeName === "undefined" ||
+      typeof req.body.data === "undefined" ||
+      typeof req.body.junkai === "undefined"
+    ) {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    } else {
+      res.json(
+        await saveRoute(
+          req.body.userId,
+          req.body.routeName,
+          req.body.data,
+          req.body.junkai
+        )
+      );
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }

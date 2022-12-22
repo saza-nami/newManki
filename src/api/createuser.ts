@@ -14,32 +14,32 @@ const maxUsers = 100;
 // dos attack countermeasures proc
 let lastLog: Access = { date: [0], ipAddress: ["anyonyomarubobo"] };
 
-const lockTableSql = "LOCK TABLES userTable WRITE"; // lock table
-const unlockTableSql = "UNLOCK TABLES"; // unlock table
-const countUsersSql = "SELECT COUNT(*) FROM userTable WHERE endAt IS NULL";
-const insertUserSql = "INSERT INTO userTable() VALUES ()";
-const reqLastUserIdSql =
+const lockUW = "LOCK TABLES userTable WRITE";
+const unlock = "UNLOCK TABLES";
+const countUsers = "SELECT COUNT(*) FROM userTable WHERE endAt IS NULL";
+const addUser = "INSERT INTO userTable() VALUES ()";
+const getLastUser =
   "SELECT BIN_TO_UUID(userId, 1) FROM userTable \
   ORDER BY userId DESC, startAt DESC LIMIT 1";
 
 async function createUserTran(): Promise<CreateUserResult> {
-  // return value of API
   const result: CreateUserResult = { succeeded: false };
-
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    await conn.query(lockTableSql); // Use query!
-    const users = db.extractElem(await db.executeTran(conn, countUsersSql));
-    let userCount: number = maxUsers; // Active users proc
-    if (users !== undefined && "COUNT(*)" in users) {
+    await conn.query(lockUW);
+    const users = db.extractElem(await db.executeTran(conn, countUsers));
+    let userCount: number = maxUsers;
+    if (
+      users !== undefined &&
+      "COUNT(*)" in users &&
+      users["COUNT(*)"] !== undefined
+    ) {
       userCount = users["COUNT(*)"];
     }
     if (userCount < maxUsers) {
-      await db.executeTran(conn, insertUserSql);
-      const userId = db.extractElem(
-        await db.executeTran(conn, reqLastUserIdSql)
-      );
+      await db.executeTran(conn, addUser);
+      const userId = db.extractElem(await db.executeTran(conn, getLastUser));
       if (
         userId !== undefined &&
         "BIN_TO_UUID(userId, 1)" in userId &&
@@ -47,14 +47,18 @@ async function createUserTran(): Promise<CreateUserResult> {
       ) {
         result.succeeded = true;
         result.userId = userId["BIN_TO_UUID(userId, 1)"];
+      } else {
+        result.reason = "User creation failed.";
       }
+    } else {
+      result.reason = "Users exceeded the limit.";
     }
     await conn.commit();
   } catch (err) {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTableSql); // Use query!
+    await conn.query(unlock);
     conn.release();
   }
   return report(result);
@@ -62,13 +66,8 @@ async function createUserTran(): Promise<CreateUserResult> {
 
 export default express.Router().get("/createUser", async (req, res) => {
   try {
-    // dos attack countermeasures
     if (lastLog.ipAddress.indexOf(req.ip) > -1) {
-      if (
-        Date.now() - lastLog.date[lastLog.ipAddress.indexOf(req.ip)] <
-        10000
-      ) {
-        // update attacker's log
+      if (Date.now() - lastLog.date[lastLog.ipAddress.indexOf(req.ip)] < 1000) {
         lastLog.date[lastLog.ipAddress.indexOf(req.ip)] = Date.now();
         let date = lastLog.date[lastLog.ipAddress.indexOf(req.ip)];
         let ip = lastLog.ipAddress[lastLog.ipAddress.indexOf(req.ip)];
@@ -82,16 +81,17 @@ export default express.Router().get("/createUser", async (req, res) => {
         );
         lastLog.date.unshift(date);
         lastLog.ipAddress.unshift(ip);
-        return res.json({ succeeded: false });
+        return res.json({
+          succeeded: false,
+          reason: "Please allow some time and access again.",
+        });
       } else {
         lastLog.date[lastLog.ipAddress.indexOf(req.ip)] = Date.now();
       }
     } else {
-      // add new user's log
       lastLog.date.push(Date.now());
       lastLog.ipAddress.push(req.ip);
     }
-    // main process
     res.json(await createUserTran());
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
