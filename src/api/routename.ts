@@ -40,27 +40,10 @@ async function routeNames(userId: string): Promise<RouteInfo> {
           if ("routeName" in elem && "route" in elem) {
             const routeName = elem["routeName"];
             const route = JSON.parse(elem["route"]);
-            let available: boolean = true;
-            for (const points of route) {
-              available = true;
-              for (let i = 0; i < points.length - 1; i++) {
-                console.log(points[i], points[i + 1]);
-                if (
-                  map.isReachable(points[i], points[i + 1], passPoints) ===
-                  false
-                ) {
-                  console.log(i);
-                  available = false;
-                  break;
-                }
-              }
-              if (!available) {
-                break;
-              }
-            }
+            const checkResult = map.checkRoute(route, passPoints);
             passableNames.push({
               routeName: routeName,
-              available: available,
+              available: checkResult.available,
             });
           }
         }
