@@ -9,8 +9,11 @@ import report from "api/_report";
 async function endRoute(userId: string): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
   const conn = await db.createNewConn();
+  const lockOWCW = "LOCK TABLES orderTable WRITE, carTable WRITE";
+  const unlock = "UNLOCK TABLES";
   try {
     await conn.beginTransaction();
+    await conn.query(lockOWCW);
     if ((await global.existUserTran(conn, userId)) === true) {
       await global.executeEnd(conn, userId);
       result.succeeded = true;
@@ -22,6 +25,7 @@ async function endRoute(userId: string): Promise<ApiResult> {
     await conn.rollback();
     console.log(err);
   } finally {
+    await conn.query(unlock);
     conn.release();
   }
   return report(result);

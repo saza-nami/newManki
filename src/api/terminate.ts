@@ -8,9 +8,13 @@ import report from "api/_report";
 
 async function terminate(userId: string): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
+  const lockUWOWCW =
+    "LOCK TABLES userTable WRITE, orderTable WRITE, carTable WRITE";
+  const unlock = "UNLOCK TABLES";
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
+    await conn.query(lockUWOWCW);
     if ((await global.existUserTran(conn, userId)) === true) {
       await global.executeEnd(conn, userId);
       await global.executeTerminate(conn, userId);
@@ -23,6 +27,7 @@ async function terminate(userId: string): Promise<ApiResult> {
     await conn.rollback();
     console.log(err);
   } finally {
+    await conn.query(unlock);
     conn.release();
   }
   return report(result);

@@ -11,6 +11,7 @@ export async function unallocateCarTran() {
     "LOCK TABLES userTable WRITE, orderTable WRITE, \
     carTable WRITE, passableTable READ";
   const unlock = "UNLOCK TABLES";
+  console.time("unalloc");
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
@@ -61,10 +62,9 @@ export async function unallocateCarTran() {
                   );
                   await db.executeTran(
                     conn,
-                    "UPDATE orderTable SET nextPoint = ?, arrival = FALSE, \
-                    finish = FAlSE, carToRoute = ?, \
+                    "UPDATE orderTable SET nextPoint = ?, carToRoute = ?, \
                     pRoute = 0, pPoint = 0 WHERE orderId = ?",
-                    [tmpAstar[0], tmpAstar, orderId["orderId"]]
+                    [tmpAstar[1], tmpAstar, orderId["orderId"]]
                   );
                   await db.executeTran(
                     conn,
@@ -88,6 +88,7 @@ export async function unallocateCarTran() {
     await conn.query(unlock);
     conn.release();
   }
+  console.timeEnd("unalloc");
   setTimeout(() => unallocateCarTran(), 5000);
 }
 
@@ -98,6 +99,7 @@ export async function allocatedCarTran() {
     "LOCK TABLES userTable WRITE, orderTable WRITE, \
     carTable WRITE, passableTable READ";
   const unlock = "UNLOCK TABLES";
+  console.time("alloc");
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
@@ -177,10 +179,9 @@ export async function allocatedCarTran() {
             );
             await db.executeTran(
               conn,
-              "UPDATE orderTable SET nextPoint = ?, arrival = FALSE, \
-              finish = FAlSE, carToRoute = ?, \
+              "UPDATE orderTable SET nextPoint = ?, carToRoute = ?, \
               pRoute = 0, pPoint = 0 WHERE orderId = ?",
-              [tmpAstar[0], tmpAstar, realloc.orderId]
+              [tmpAstar[1], tmpAstar, realloc.orderId]
             );
             await db.executeTran(
               conn,
@@ -217,10 +218,9 @@ export async function allocatedCarTran() {
                 );
                 await db.executeTran(
                   conn,
-                  "UPDATE orderTable SET nextPoint = ?, arrival = FALSE, \
-                  finish = FAlSE, carToRoute = ? \
+                  "UPDATE orderTable SET nextPoint = ?, carToRoute = ? \
                   pRoute = 0, pPoint = 0 WHERE orderId = ?",
-                  [tmpAstar[0], tmpAstar, realloc.orderId]
+                  [tmpAstar[1], tmpAstar, realloc.orderId]
                 );
                 await db.executeTran(
                   conn,
@@ -248,6 +248,7 @@ export async function allocatedCarTran() {
     await conn.query(unlock);
     conn.release();
   }
+  console.timeEnd("alloc");
   setTimeout(() => allocatedCarTran(), 5000);
 }
 
@@ -295,6 +296,9 @@ export async function intervalCarTran() {
 }
 
 export async function intervalUserTran() {
+  const lockUWOWCW =
+    "LOCK TABLES userTable WRITE, orderTable WRITE, carTable WRITE";
+  const unlock = "UNLOCK TABLES";
   const getUserSql =
     "SELECT userId, orderId, carId FROM userTable \
     WHERE startAt <= SUBTIME(NOW(), '12:00:00') AND endAt IS NULL \
@@ -310,6 +314,7 @@ export async function intervalUserTran() {
 
   try {
     await conn.beginTransaction();
+    await conn.query(lockUWOWCW);
     const userTable = db.extractElems(await db.executeTran(conn, getUserSql));
     if (userTable !== undefined) {
       for (const elem of userTable) {
@@ -331,6 +336,7 @@ export async function intervalUserTran() {
     await conn.rollback();
     console.log(err);
   } finally {
+    await conn.query(unlock);
     conn.release();
   }
   setTimeout(() => intervalUserTran(), 5000);
@@ -412,19 +418,29 @@ export async function progressTran(
   const orderTable = db.extractElem(
     await db.executeTran(connected, getParamsSql, [orderId])
   );
+  let param: proceed;
   if (
     orderTable !== undefined &&
     "nextPoint" in orderTable &&
+    orderTable["nextPoint"] !== undefined &&
     "arrival" in orderTable &&
+    orderTable["arrival"] !== undefined &&
     "finish" in orderTable &&
+    orderTable["finish"] !== undefined &&
     "arrange" in orderTable &&
+    orderTable["arrange"] !== undefined &&
     "carToRoute" in orderTable &&
+    orderTable["carToRoute"] !== undefined &&
     "route" in orderTable &&
+    orderTable["route"] !== undefined &&
     "junkai" in orderTable &&
+    orderTable["junkai"] !== undefined &&
     "pRoute" in orderTable &&
-    "pPoint" in orderTable
+    orderTable["pRoute"] !== undefined &&
+    "pPoint" in orderTable &&
+    orderTable["pPoint"] !== undefined
   ) {
-    let param: proceed = {
+    param = {
       nextPoint: orderTable["nextPoint"],
       arrival: orderTable["arrival"] ? true : false,
       finish: orderTable["finish"] ? true : false,
@@ -435,6 +451,7 @@ export async function progressTran(
       pRoute: orderTable["pRoute"],
       pPoint: orderTable["pPoint"],
     };
+    console.log(param);
     // 車が走行中で停留所に目的地にもいない場合
     if (status === 3 && !param.arrival && !param.finish) {
       // 車が経路の始点に向かっている時
@@ -442,7 +459,7 @@ export async function progressTran(
         // 車が経路の始点についたら
         if (param.carToRoute.length - 1 === param.pPoint) {
           await db.executeTran(connected, arrangeOrderSql, [
-            param.route[0][0],
+            param.route[0][1],
             orderId,
           ]);
           await db.executeTran(connected, arrangeCarSql, [carId]);
@@ -460,18 +477,13 @@ export async function progressTran(
       else {
         // 目的地についたら
         if (
-          param.route === undefined ||
-          param.route[param.pRoute - 1] === undefined
-        ) {
-          return nextPosition;
-        } else if (
-          param.route.length - 1 === param.pRoute &&
-          param.route[param.pRoute - 1].length - 1 === param.pPoint
+          param.route.length === param.pRoute &&
+          param.route[param.pRoute - 1].length - 2 === param.pPoint
         ) {
           // 巡回する場合
           if (param.junkai) {
             await db.executeTran(connected, junkaiOrderSql, [
-              param.route[0][0],
+              param.route[0][1],
               orderId,
             ]);
           }
@@ -482,7 +494,7 @@ export async function progressTran(
           }
         }
         // 停留所についたら
-        else if (param.route[param.pRoute - 1].length - 1 === param.pPoint) {
+        else if (param.route[param.pRoute - 1].length - 2 === param.pPoint) {
           await db.executeTran(connected, arrivalOrderSql, [
             param.route[param.pRoute][0],
             orderId,
@@ -492,7 +504,7 @@ export async function progressTran(
         // 経路間移動中なら
         else {
           await db.executeTran(connected, movingSql, [
-            param.route[param.pRoute - 1][param.pPoint],
+            param.route[param.pRoute - 1][param.pPoint + 2],
             orderId,
           ]);
         }
@@ -500,4 +512,5 @@ export async function progressTran(
       nextPosition = param.nextPoint;
     }
   }
+  return nextPosition;
 }

@@ -94,6 +94,12 @@ async function createReply(
               ) {
                 result.response = "halt";
               } else {
+                await db.executeTran(conn, updCarInfo, [
+                  rndSeq,
+                  location,
+                  battery,
+                  carId,
+                ]);
                 result.sequence = rndSeq;
                 if (
                   carInfo["status"] === 1 ||
@@ -125,8 +131,11 @@ async function createReply(
                     carId,
                     carInfo["status"]
                   );
+                  console.log(nextPoint);
                   if (nextPoint !== undefined) {
                     result.destination = nextPoint;
+                  } else {
+                    result.response = "stop";
                   }
                 }
               }
@@ -170,8 +179,8 @@ async function createReply(
                     result.destination = destination["nextPoint"];
                   }
                 }
-                if (carInfo["status"] === 3) {
-                  result.response = "next";
+                if (carInfo["status"] === 3 || carInfo["status"] === 4) {
+                  result.response = "pong";
                 } else if (
                   carInfo["status"] === 1 &&
                   "nowPoint" in carInfo &&
@@ -179,7 +188,7 @@ async function createReply(
                 ) {
                   result.response = "stop";
                   result.destination = carInfo["nowPoint"];
-                } else if (carInfo["status"] === 2 || carInfo["status"] === 4) {
+                } else if (carInfo["status"] === 2) {
                   result.response = "stop";
                 }
               }
