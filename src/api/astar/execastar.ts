@@ -1,59 +1,61 @@
-import { parentPort, workerData } from "worker_threads";
-import { ApiResult, PassablePoint, Position } from "types";
-import * as astar from "api/scripts/notNotAstar";
+/* 経路探索API */
+
+import express from "express";
+import { Worker } from "worker_threads";
+import { Position, PassablePoint } from "types";
+import * as db from "database";
+import * as global from "api/scripts/global";
 import * as map from "api/scripts/map";
 import report from "api/_report";
 
-interface CreateRoute extends ApiResult {
-  route?: Position[];
-  reason?: string;
-}
-
-function thAstar(target: Position[], passPoints: PassablePoint[]): CreateRoute {
-  const result: CreateRoute = { succeeded: false };
-  let point = 0;
-  for (const t of target) {
-    point++;
-    if (!map.isPassable(t, passPoints)) {
-      result.reason = "Destination " + point + " is outside the passable area.";
-      return report(result);
+async function createRoute(
+  userId: string,
+  target: Position[],
+  res: express.Response
+) {
+  let passPoints: PassablePoint[] = [];
+  const conn = await db.createNewConn();
+  try {
+    await conn.beginTransaction();
+    if ((await global.existUserTran(conn, userId)) === true) {
+      passPoints = await map.getPassPos(conn);
     }
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    console.log(err);
+  } finally {
+    conn.release();
   }
 
-  const resultNodes: Position[] = [];
-  const data = target;
-  const start = data.shift();
-  const end = data.pop();
+  if (passPoints.length > 0) {
+    const workerAstar = new Worker("./src/api/astar/workerrouter.js", {
+      workerData: { target: target, passPoints: passPoints },
+    });
+    Promise.all([
+      new Promise((r) => workerAstar.on("message", (message) => r(message))),
+      new Promise((r) => workerAstar.on("exit", r)),
+    ]).then((r) => {
+      res.json(r[0]);
+      report(r[0]);
+    });
+  } else {
+    res.json({ succeeded: false, reason: "Illegal user." });
+  }
+}
 
-  if (start !== undefined && end !== undefined) {
-    let cur = start;
-    for (const next of data) {
-      const part = astar.Astar(cur, next, passPoints);
-      if (part === null) {
-        result.reason =
-          "Destination " + (data.indexOf(next) + 2) + " could not be reached.";
-        return report(result);
-      } else {
-        part.pop();
-        for (const points of part) {
-          resultNodes.push(points);
-        }
-        cur = next;
-      }
-    }
-    const last = astar.Astar(cur, end, passPoints);
-    if (last === null) {
-      result.reason = "The end point could not be reached.";
+export default express.Router().post("/astar", async (req, res) => {
+  try {
+    if (
+      typeof req.body.userId === "undefined" ||
+      typeof req.body.data === "undefined" ||
+      req.body.data.length < 2
+    ) {
+      res.json({ succeeded: false, reason: "Invalid request." });
     } else {
-      for (const points of last) {
-        resultNodes.push(points);
-      }
+      await createRoute(req.body.userId, req.body.data, res);
     }
+  } catch (err) {
+    res.status(500).json({ succeeded: false, reason: err });
   }
-  result.succeeded = true;
-  result.route = resultNodes;
-  return report(result);
-}
-
-const result = thAstar(workerData.target, workerData.passPoints);
-parentPort?.postMessage(result);
+});
