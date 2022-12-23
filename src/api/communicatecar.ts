@@ -120,11 +120,14 @@ async function createReply(
                 }
                 if (carInfo["status"] === 3) {
                   result.response = "next";
-                  result.destination = await tran.progressTran(
+                  const nextPoint = await tran.progressTran(
                     conn,
                     carId,
                     carInfo["status"]
                   );
+                  if (nextPoint !== undefined) {
+                    result.destination = nextPoint;
+                  }
                 }
               }
             }

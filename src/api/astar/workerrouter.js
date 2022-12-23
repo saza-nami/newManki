@@ -1,2 +1,3 @@
 require("ts-node").register(); // 重要
-require(__dirname + "/execastar.ts");
+require("tsconfig-paths/register");
+require("./execastar");
