@@ -40,7 +40,7 @@ export async function unallocateCarTran() {
             await db.executeTran(
               conn,
               "SELECT route FROM orderTable \
-              WHERE orderId = ? FOR UPDATE",
+              WHERE orderId = ? AND endAt IS NULL FOR UPDATE",
               [orderId["orderId"]]
             )
           );
