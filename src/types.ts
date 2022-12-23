@@ -37,6 +37,11 @@ export interface Node {
   parent: number | null /* 親ノードの配列番号 */;
 }
 
+export interface order {
+  orderId: number;
+  route: Position[][];
+}
+
 // 経路走行に必要な情報
 export interface proceed {
   nextPoint: Position;
