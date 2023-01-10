@@ -188,6 +188,7 @@ export async function unallocateCarTran() {
               ]).then((r) => {
                 carToRoute = r[0];
               });
+              console.log("car: " + carToRoute);
               if (Array.isArray(carToRoute)) {
                 const connS = await db.createNewConn();
                 try {

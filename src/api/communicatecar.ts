@@ -161,7 +161,7 @@ async function createReply(
                   carId,
                 ]);
                 result.sequence = rndSeq;
-                console.log(orderId);
+                console.log("orderId " + orderId);
                 if (
                   orderId !== undefined &&
                   "orderId" in orderId &&
@@ -170,7 +170,7 @@ async function createReply(
                   const destination = db.extractElem(
                     await db.executeTran(conn, reqNext, [orderId["orderId"]])
                   );
-                  console.log(destination);
+                  console.log("dest " + destination);
                   if (
                     destination !== undefined &&
                     "nextPoint" in destination &&
@@ -202,8 +202,11 @@ async function createReply(
             ]);
             result.succeeded = true;
             result.response = "halt";
+          } else {
+            result.reason = "request error";
           }
         } else {
+          result.reason = "auth error";
           console.log("auth error");
         }
       }
