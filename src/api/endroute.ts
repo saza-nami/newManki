@@ -9,7 +9,8 @@ import report from "api/_report";
 async function endRoute(userId: string): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
   const conn = await db.createNewConn();
-  const lockOWCW = "LOCK TABLES orderTable WRITE, carTable WRITE";
+  const lockOWCW =
+    "LOCK TABLES orderTable WRITE, carTable WRITE, userTable READ";
   const unlock = "UNLOCK TABLES";
   try {
     await conn.beginTransaction();
