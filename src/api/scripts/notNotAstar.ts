@@ -111,8 +111,8 @@ async function manAstar(
       parent: null,
     },
   ];
-
   let foo = 0;
+
   while (goalNode.parent === null) {
     const minIndex = getMinIndex(nodes);
     if (minIndex != -1) {

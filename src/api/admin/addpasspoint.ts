@@ -6,12 +6,12 @@ import * as admin from "api/admin/admin";
 import * as db from "database";
 import report from "api/_report";
 
-const addPassableSql =
+const addPassable =
   "INSERT INTO passableTable(radius, lat, lng) VALUES(?, ?, ?)";
-const lockTablesSql = "LOCK TABLES passableTable WRITE, adminTable READ";
-const unlockTableSql = "UNLOCK TABLES";
+const lockPWAR = "LOCK TABLES passableTable WRITE, adminTable READ";
+const unlock = "UNLOCK TABLES";
 
-async function addPassable(
+async function addPassables(
   adminId: string,
   passPoints: PassablePoint[]
 ): Promise<ApiResult> {
@@ -27,11 +27,11 @@ async function addPassable(
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    await conn.query(lockTablesSql);
+    await conn.query(lockPWAR);
     if ((await admin.existAdminTran(conn, adminId)) === true) {
       for (const i in add) {
         console.log(add[i].position.lat);
-        await db.executeTran(conn, addPassableSql, [
+        await db.executeTran(conn, addPassable, [
           add[i].radius,
           add[i].position.lat,
           add[i].position.lng,
@@ -40,11 +40,11 @@ async function addPassable(
       result.succeeded = true;
     }
     await conn.commit();
+    await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlockTableSql);
     conn.release();
   }
   return report(result);
@@ -52,7 +52,7 @@ async function addPassable(
 
 export default express.Router().post("/addPassable", async (req, res) => {
   try {
-    res.json(await addPassable(req.body.adminId, req.body.passPoints));
+    res.json(await addPassables(req.body.adminId, req.body.passPoints));
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }

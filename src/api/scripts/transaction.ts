@@ -21,16 +21,16 @@ export async function unallocateCarTran() {
     "LOCK TABLES userTable WRITE, orderTable WRITE, carTable WRITE";
   const reqCarInfo =
     "SELECT status, nowPoint FROM carTable \
-    WHERE carId = UUID_TO_BIN(?,1) FOR UPDATE";
+    WHERE carId = UUID_TO_BIN(?, 1) FOR UPDATE";
   const reqOrderEndAt =
     "SELECT endAt FROM orderTable WHERE orderId = ? FOR UPDATE";
   const updUserInfo =
-    "UPDATE userTable SET carId = UUID_TO_BIN(?,1) WHERE orderId = ?";
+    "UPDATE userTable SET carId = UUID_TO_BIN(?, 1) WHERE orderId = ?";
   const updOrderInfo =
     "UPDATE orderTable SET nextPoint = ?, carToRoute = ?, \
     pRoute = 0, pPoint = 0 WHERE orderId = ?";
   const updCarStatus =
-    "UPDATE carTable SET status = 3 WHERE carId = UUID_TO_BIN(?,1)";
+    "UPDATE carTable SET status = 3 WHERE carId = UUID_TO_BIN(?, 1)";
   const unlock = "UNLOCK TABLES";
 
   let passPoints: PassablePoint[] = [];
@@ -140,7 +140,6 @@ export async function unallocateCarTran() {
               "allocate orderId: " + order.orderId + ", carId: " + car.carId
             );
           }
-          // }
           if (allocFlag) {
             break;
           }
@@ -157,33 +156,33 @@ export async function allocatedCarTran() {
     "LOCK TABLES userTable READ, passableTable READ, \
     orderTable READ, carTable READ";
   const getLists =
-    "SELECT orderId, BIN_TO_UUID(carId,1) FROM userTable \
+    "SELECT orderId, BIN_TO_UUID(carId, 1) FROM userTable \
     WHERE orderId IS NOT NULL AND carId IS NOT NULL AND \
     endAt IS NULL LOCK IN SHARE MODE";
   const judgeEndAt =
     "SELECT route, endAt FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE";
   const judgeStatus =
     "SELECT status, nowPoint FROM carTable \
-    WHERE carId = UUID_TO_BIN(?,1) LOCK IN SHARE MODE";
+    WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
   const lockOWCW = "LOCK TABLES orderTable WRITE, carTable WRITE";
   const reqCarInfo =
     "SELECT status, nowPoint FROM carTable \
-    WHERE carId = UUID_TO_BIN(?,1) FOR UPDATE";
+    WHERE carId = UUID_TO_BIN(?, 1) FOR UPDATE";
   const reqOrderEndAt =
     "SELECT endAt FROM orderTable WHERE orderId = ? FOR UPDATE";
   const updOrderInfo =
     "UPDATE orderTable SET nextPoint = ?, carToRoute = ?, \
     pRoute = 0, pPoint = 0 WHERE orderId = ?";
   const updCarStatus =
-    "UPDATE carTable SET status = 3 WHERE carId = UUID_TO_BIN(?,1)";
+    "UPDATE carTable SET status = 3 WHERE carId = UUID_TO_BIN(?, 1)";
   const lockCR = "LOCK TABLES carTable READ";
   const getCarsInfo =
-    "SELECT carId, nowPoint FROM carTable WHERE carId != UUID_TO_BIN(?,1) \
+    "SELECT carId, nowPoint FROM carTable WHERE carId != UUID_TO_BIN(?, 1) \
     AND status = 1 AND battery >= 30 LOCK IN SHARE MODE";
   const lockUWOWCW =
     "LOCK TABLES userTable WRITE, orderTable WRITE, carTable WRITE";
   const updUserInfo =
-    "UPDATE userTable SET carId = UUID_TO_BIN(?,1) WHERE orderId = ?";
+    "UPDATE userTable SET carId = UUID_TO_BIN(?, 1) WHERE orderId = ?";
   const unlock = "UNLOCK TABLES";
 
   let allocates: Allocated[] = [];
@@ -452,7 +451,7 @@ export async function intervalUserTran() {
     finish = TRUE, endAt = NOW() WHERE orderId = ?";
   const freeCarSql =
     "UPDATE carTable SET status = 1 \
-    WHERE carId = ? AND (status != 5 OR status != 6)";
+    WHERE carId = ? AND (status != 5 OR status != 6 OR status != 7)";
   const conn = await db.createNewConn();
 
   try {

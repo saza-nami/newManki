@@ -11,13 +11,13 @@ import Terminate from "api/terminate";
 import ProceedRoute from "api/proceedroute";
 import CommunicateCar from "api/communicatecar";
 import LoginAdmin from "api/admin/loginadmin";
-import ChangePasswd from "api/admin/changePasswd";
+import ChangePasswd from "api/admin/changepasswd";
 import ReqPassAdmin from "api/admin/reqpassadmin";
 import ReqCarInfo from "api/admin/reqcarinfo";
 import AddPassPoint from "api/admin/addpasspoint";
 import DelPassPoint from "api/admin/delpasspoint";
 import TerminateAdmin from "api/admin/terminateadmin";
-import Astar from "api/execastar";
+import Astar from "api/astar/execastar";
 
 export default [
   CreateUserRouter,
