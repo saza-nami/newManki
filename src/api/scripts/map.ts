@@ -29,7 +29,7 @@ function checkRoute(route: Position[][], passPoints: PassablePoint[]) {
 
 /* databaseから通行可能領域点群を取得 */
 async function getPassPos(
-  connected: mysql.PoolConnection
+  connected: mysql.PoolConnection | mysql.Connection
 ): Promise<PassablePoint[]> {
   const result: PassablePoint[] = [];
   const passableSql =

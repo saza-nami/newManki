@@ -1,145 +1,62 @@
 import mysql from "mysql2/promise";
-import { Position, PassablePoint, AllocatedCar, proceed, order } from "types";
-import { Worker } from "worker_threads";
-import * as astar from "api/scripts/notNotAstar";
+import {
+  Position,
+  PassablePoint,
+  AllocatedCar,
+  proceed,
+  order,
+  car,
+} from "types";
+import * as Astar from "api/scripts/notNotAstar";
 import * as db from "database";
 import * as map from "api/scripts/map";
 
 // car allocate
-/*
 export async function unallocateCarTran() {
-  let allocFlag: boolean = false;
-  const lockUWOWCWPR =
-    "LOCK TABLES userTable WRITE, orderTable WRITE, \
-    carTable WRITE, passableTable READ";
-  const unlock = "UNLOCK TABLES";
-  console.time("unalloc");
-  const conn = await db.createNewConn();
-  try {
-    await conn.beginTransaction();
-    await conn.query(lockUWOWCWPR);
-    let tmpAstar: Position[] | null = [];
-    const order = db.extractElems(
-      await db.executeTran(
-        conn,
-        "SELECT orderId FROM userTable \
-        WHERE carId IS NULL AND orderId IS NOT NULL \
-        AND endAt IS NULL FOR UPDATE"
-      )
-    );
-    const passPoints: PassablePoint[] = await map.getPassPos(conn);
-    const car = db.extractElems(
-      await db.executeTran(
-        conn,
-        "SELECT carId, nowPoint, battery FROM carTable \
-        WHERE status = 1 AND battery >= 30 FOR UPDATE"
-      )
-    );
-    if (order !== undefined && car !== undefined) {
-      // 未割当の命令分ループ
-      for (const orderId of order) {
-        if ("orderId" in orderId && orderId["orderId"] !== undefined) {
-          const route = db.extractElem(
-            await db.executeTran(
-              conn,
-              "SELECT route FROM orderTable \
-              WHERE orderId = ? AND endAt IS NULL FOR UPDATE",
-              [orderId["orderId"]]
-            )
-          );
-          if (route !== undefined && "route" in route) {
-            // 空いている車分ループ
-            for (const carId of car) {
-              if ("carId" in carId && "nowPoint" in carId) {
-                tmpAstar = astar.Astar(
-                  carId["nowPoint"],
-                  route["route"][0][0],
-                  passPoints
-                );
-                if (tmpAstar !== null) {
-                  await db.executeTran(
-                    conn,
-                    "UPDATE userTable SET carId = ? WHERE orderId = ?",
-                    [carId["carId"], orderId["orderId"]]
-                  );
-                  await db.executeTran(
-                    conn,
-                    "UPDATE orderTable SET nextPoint = ?, carToRoute = ?, \
-                    pRoute = 0, pPoint = 0 WHERE orderId = ?",
-                    [tmpAstar[1], tmpAstar, orderId["orderId"]]
-                  );
-                  await db.executeTran(
-                    conn,
-                    "UPDATE carTable SET status = 3 WHERE carId = ?",
-                    [carId["carId"]]
-                  );
-                  allocFlag = true;
-                }
-              }
-              if (allocFlag) break;
-            }
-          }
-        }
-      }
-    }
-    await conn.commit();
-  } catch (err) {
-    await conn.rollback();
-    console.log(err);
-  } finally {
-    await conn.query(unlock);
-    conn.release();
-  }
-  console.timeEnd("unalloc");
-  setTimeout(() => unallocateCarTran(), 5000);
-}
-*/
-
-export async function unallocateCarTran() {
+  console.log("called");
   let allocFlag: boolean = false;
   const lockURPRORCR =
     "LOCK TABLES userTable READ, passableTable READ, \
     orderTable READ, carTable READ";
   const getOrderIds =
-    "SELECT orderId FROM userTable WHERE carId IS NULL AND orderId IS NOT NULL \
-    AND endAt IS NULL LOCK IN SHARE MODE";
+    "SELECT orderId FROM userTable WHERE carId IS NULL \
+    AND orderId IS NOT NULL AND endAt IS NULL LOCK IN SHARE MODE";
   const getCarsInfo =
-    "SELECT carId, nowPoint FROM carTable \
+    "SELECT BIN_TO_UUID(carId, 1), nowPoint FROM carTable \
     WHERE status = 1 AND battery >= 30 LOCK IN SHARE MODE";
   const reqRoute =
     "SELECT route FROM orderTable WHERE orderId = ? AND endAt IS NULL";
-  const lockUWOWCWPR =
-    "LOCK TABLES userTable WRITE, orderTable WRITE, \
-    carTable WRITE, passableTable READ";
+  const lockUWOWCW =
+    "LOCK TABLES userTable WRITE, orderTable WRITE, carTable WRITE";
   const reqCarInfo =
-    "SELECT status, nowPoint FROM carTable WHERE carId = ? FOR UPDATE";
+    "SELECT status, nowPoint FROM carTable \
+    WHERE carId = UUID_TO_BIN(?,1) FOR UPDATE";
   const reqOrderEndAt =
     "SELECT endAt FROM orderTable WHERE orderId = ? FOR UPDATE";
-  const updUserInfo = "UPDATE userTable SET carId = ? WHERE orderId = ?";
+  const updUserInfo =
+    "UPDATE userTable SET carId = UUID_TO_BIN(?,1) WHERE orderId = ?";
   const updOrderInfo =
     "UPDATE orderTable SET nextPoint = ?, carToRoute = ?, \
     pRoute = 0, pPoint = 0 WHERE orderId = ?";
-  const updCarStatus = "UPDATE carTable SET status = 3 WHERE carId = ?";
+  const updCarStatus =
+    "UPDATE carTable SET status = 3 WHERE carId = UUID_TO_BIN(?,1)";
   const unlock = "UNLOCK TABLES";
-  console.time("unalloc");
 
-  let orderIds: mysql.RowDataPacket[] | undefined = undefined;
   let passPoints: PassablePoint[] = [];
-  let cars: mysql.RowDataPacket[] | undefined = undefined;
+  let cars: car[] = [];
   let orders: order[] = [];
-  const connF = await db.createNewConn();
+  const conn1 = await db.createNewConn();
   try {
-    await connF.beginTransaction();
-    await connF.query(lockURPRORCR);
-    orderIds = db.extractElems(await db.executeTran(connF, getOrderIds));
-    passPoints = await map.getPassPos(connF);
-    cars = db.extractElems(await db.executeTran(connF, getCarsInfo));
+    await conn1.beginTransaction();
+    await conn1.query(lockURPRORCR);
+    passPoints = await map.getPassPos(conn1);
+    const orderIds = db.extractElems(await db.executeTran(conn1, getOrderIds));
+    const carsInfo = db.extractElems(await db.executeTran(conn1, getCarsInfo));
     if (orderIds !== undefined) {
       for (const orderId of orderIds) {
-        console.log(orderId);
         if ("orderId" in orderId && orderId["orderId"] !== undefined) {
           const route = db.extractElem(
-            await db.executeTran(connF, reqRoute, [orderId["orderid"]])
+            await db.executeTran(conn1, reqRoute, [orderId["orderId"]])
           );
           if (
             route !== undefined &&
@@ -152,94 +69,87 @@ export async function unallocateCarTran() {
         }
       }
     }
-    await connF.commit();
+    if (carsInfo !== undefined) {
+      for (const carInfo of carsInfo) {
+        if (
+          "BIN_TO_UUID(carId, 1)" in carInfo &&
+          carInfo["BIN_TO_UUID(carId, 1)"] !== undefined &&
+          "nowPoint" in carInfo &&
+          carInfo["nowPoint"] !== undefined
+        ) {
+          cars.push({
+            carId: carInfo["BIN_TO_UUID(carId, 1)"],
+            nowPoint: carInfo["nowPoint"],
+          });
+        }
+      }
+    }
+    await conn1.commit();
+    await conn1.query(unlock);
   } catch (err) {
-    await connF.rollback();
+    await conn1.rollback();
     console.log(err);
   } finally {
-    await connF.query(unlock);
-    connF.release();
+    conn1.release();
   }
   if (allocFlag) {
     for (const order of orders) {
       allocFlag = false;
       if (cars !== undefined) {
         for (const car of cars) {
-          if ("nowPoint" in car && car["nowPoint"] !== undefined) {
-            if (
-              map.isReachable(car["nowPoint"], order.route[0][0], passPoints)
-            ) {
-              allocFlag = true;
-              const workerAstar = new Worker(
-                "./src/api/astar/workerrouter.js",
-                {
-                  workerData: {
-                    target: [car["nowPoint"], order.route[0][0]],
-                    passPoints: passPoints,
-                  },
-                }
+          const carToRoute: Position[] | null = await Astar.manAstar(
+            car.nowPoint,
+            order.route[0][0],
+            passPoints
+          );
+          if (carToRoute !== null) {
+            allocFlag = true;
+            const conn2 = await db.createNewConn();
+            try {
+              await conn2.beginTransaction();
+              await conn2.query(lockUWOWCW);
+              const orderEndAt = db.extractElem(
+                await db.executeTran(conn2, reqOrderEndAt, [order.orderId])
               );
-              let carToRoute;
-              Promise.all([
-                new Promise((r) =>
-                  workerAstar.on("message", (message) => r(message))
-                ),
-                new Promise((r) => workerAstar.on("exit", r)),
-              ]).then((r) => {
-                carToRoute = r[0];
-              });
-              console.log("car: " + carToRoute);
-              if (Array.isArray(carToRoute)) {
-                const connS = await db.createNewConn();
-                try {
-                  await connS.beginTransaction();
-                  await connS.query(lockUWOWCWPR);
-                  if ("carId" in car && car["carId"] !== undefined) {
-                    const latest = db.extractElem(
-                      await db.executeTran(connS, reqCarInfo, [car["carId"]])
-                    );
-                    const orderEndAt = db.extractElem(
-                      await db.executeTran(connS, reqOrderEndAt, [
-                        order["orderId"],
-                      ])
-                    );
-                    if (
-                      latest !== undefined &&
-                      "nowPoint" in latest &&
-                      latest["nowPoint"] !== undefined &&
-                      "status" in latest &&
-                      latest["status"] === 1 &&
-                      orderEndAt !== undefined &&
-                      "endAt" in orderEndAt &&
-                      orderEndAt["endAt"] === null
-                    ) {
-                      if (map.approx(car["nowPoint"], latest["nowPoint"])) {
-                        await db.executeTran(connS, updUserInfo, [
-                          car["carId"],
-                          order["orderId"],
-                        ]);
-                        await db.executeTran(connS, updOrderInfo, [
-                          carToRoute[1],
-                          carToRoute,
-                          order["orderId"],
-                        ]);
-                        await db.executeTran(connS, updCarStatus, [
-                          car["carId"],
-                        ]);
-                      }
-                    }
-                  }
-                  await connS.commit();
-                } catch (err) {
-                  await connS.rollback();
-                  console.log(err);
-                } finally {
-                  await connS.query(unlock);
-                  connS.release();
+              const latest = db.extractElem(
+                await db.executeTran(conn2, reqCarInfo, [car.carId])
+              );
+              if (
+                orderEndAt !== undefined &&
+                "endAt" in orderEndAt &&
+                orderEndAt["endAt"] === null &&
+                latest !== undefined &&
+                "nowPoint" in latest &&
+                latest["nowPoint"] !== undefined &&
+                "status" in latest &&
+                latest["status"] === 1
+              ) {
+                if (map.approx(car.nowPoint, latest["nowPoint"])) {
+                  await db.executeTran(conn2, updUserInfo, [
+                    car.carId,
+                    order.orderId,
+                  ]);
+                  await db.executeTran(conn2, updOrderInfo, [
+                    carToRoute[1],
+                    carToRoute,
+                    order.orderId,
+                  ]);
+                  await db.executeTran(conn2, updCarStatus, [car.carId]);
                 }
               }
+              await conn2.commit();
+              await conn2.query(unlock);
+            } catch (err) {
+              await conn2.rollback();
+              console.log(err);
+            } finally {
+              conn2.release();
             }
+            console.log(
+              "allocate orderId: " + order.orderId + ", carId: " + car.carId
+            );
           }
+          // }
           if (allocFlag) {
             break;
           }
@@ -247,167 +157,250 @@ export async function unallocateCarTran() {
       }
     }
   }
-  console.timeEnd("unalloc");
   setTimeout(() => unallocateCarTran(), 5000);
 }
 
-// car reallocate
 export async function allocatedCarTran() {
   let allocFlag: boolean = false;
-  const lockUWOWCWPR =
-    "LOCK TABLES userTable WRITE, orderTable WRITE, \
-    carTable WRITE, passableTable READ";
+  const lockURPRORCR =
+    "LOCK TABLES userTable READ, passableTable READ, \
+    orderTable READ, carTable READ";
+  const getLists =
+    "SELECT orderId, BIN_TO_UUID(carId,1) FROM userTable \
+    WHERE orderId IS NOT NULL AND carId IS NOT NULL AND \
+    endAt IS NULL LOCK IN SHARE MODE";
+  const judgeEndAt =
+    "SELECT route, endAt FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE";
+  const judgeStatus =
+    "SELECT status, nowPoint FROM carTable \
+    WHERE carId = UUID_TO_BIN(?,1) LOCK IN SHARE MODE";
+  const lockOWCW = "LOCK TABLES orderTable WRITE, carTable WRITE";
+  const reqCarInfo =
+    "SELECT status, nowPoint FROM carTable \
+    WHERE carId = UUID_TO_BIN(?,1) FOR UPDATE";
+  const reqOrderEndAt =
+    "SELECT endAt FROM orderTable WHERE orderId = ? FOR UPDATE";
+  const updOrderInfo =
+    "UPDATE orderTable SET nextPoint = ?, carToRoute = ?, \
+    pRoute = 0, pPoint = 0 WHERE orderId = ?";
+  const updCarStatus =
+    "UPDATE carTable SET status = 3 WHERE carId = UUID_TO_BIN(?,1)";
+  const lockCR = "LOCK TABLES carTable READ";
+  const getCarsInfo =
+    "SELECT carId, nowPoint FROM carTable WHERE carId != UUID_TO_BIN(?,1) \
+    AND status = 1 AND battery >= 30 LOCK IN SHARE MODE";
+  const lockUWOWCW =
+    "LOCK TABLES userTable WRITE, orderTable WRITE, carTable WRITE";
+  const updUserInfo =
+    "UPDATE userTable SET carId = UUID_TO_BIN(?,1) WHERE orderId = ?";
   const unlock = "UNLOCK TABLES";
-  console.time("alloc");
-  const conn = await db.createNewConn();
+
+  let allocates: AllocatedCar[] = [];
+  let passPoints: PassablePoint[] = [];
+  const conn1 = await db.createNewConn();
   try {
-    await conn.beginTransaction();
-    await conn.query(lockUWOWCWPR);
-    let tmpAstar: Position[] | null = [];
-    const canditateAlloc = db.extractElems(
-      await db.executeTran(
-        conn,
-        "SELECT carId, orderId FROM userTable \
-        WHERE carId IS NOT NULL AND orderId IS NOT NULL \
-        AND endAt IS NULL FOR UPDATE"
-      )
-    );
-    const passPoints: PassablePoint[] = await map.getPassPos(conn);
-    const order: AllocatedCar[] = []; // 車を割り当てなければいけない命令群
-    if (canditateAlloc !== undefined) {
-      // 命令候補分ループ
-      for (const alloc of canditateAlloc) {
-        if ("carId" in alloc && "orderId" in alloc) {
-          const endAt = db.extractElem(
-            await conn.execute(
-              "SELECT endAt FROM orderTable \
-              WHERE orderId = ? FOR UPDATE",
-              [alloc["orderId"]]
-            )
+    await conn1.beginTransaction();
+    await conn1.query(lockURPRORCR);
+    passPoints = await map.getPassPos(conn1);
+    const lists = db.extractElems(await db.executeTran(conn1, getLists));
+    if (lists !== undefined) {
+      for (const list of lists) {
+        if (
+          "orderId" in list &&
+          list["orderId"] !== undefined &&
+          "BIN_TO_UUID(carId,1)" in list &&
+          list["BIN_TO_UUID(carId,1)"] !== undefined
+        ) {
+          const order = db.extractElem(
+            await db.executeTran(conn1, judgeEndAt, [list["orderId"]])
           );
           const car = db.extractElem(
-            await db.executeTran(
-              conn,
-              "SELECT nowPoint, status FROM carTable \
-              WHERE carId = ? FOR UPDATE",
-              [alloc["carId"]]
-            )
+            await db.executeTran(conn1, judgeStatus, [
+              list["BIN_TO_UUID(carId,1)"],
+            ])
           );
-          if (car !== undefined && endAt !== undefined) {
-            if (
-              "status" in car &&
-              car["status"] === 2 &&
-              "nowPoint" in car &&
-              "endAt" in endAt &&
-              endAt["endAt"] === null
-            ) {
-              order.push({
-                orderId: alloc["orderId"],
-                carId: alloc["carId"],
+          if (
+            order !== undefined &&
+            "endAt" in order &&
+            order["endAt"] === null &&
+            "route" in order &&
+            order["route"] !== undefined &&
+            car !== undefined &&
+            "status" in car &&
+            car["status"] === 2 &&
+            "nowPoint" in car &&
+            car["nowPoint"] !== undefined
+          ) {
+            allocates.push({
+              order: { orderId: list["orderId"], route: order["route"] },
+              car: {
+                carId: list["BIN_TO_UUID(carId,1)"],
                 nowPoint: car["nowPoint"],
-              });
-            }
-          }
-        }
-      }
-    } // 割り当てる命令確定
-
-    // 命令分ループ
-    for (const realloc of order) {
-      allocFlag = false;
-      const route = db.extractElem(
-        await db.executeTran(
-          conn,
-          "SELECT route FROM orderTable WHERE orderId = ? FOR UPDATE",
-          [realloc.orderId]
-        )
-      );
-      if (route !== undefined) {
-        if ("route" in route) {
-          console.log(route["route"][0][0]);
-          tmpAstar = astar.Astar(
-            realloc.nowPoint,
-            route["route"][0][0],
-            passPoints
-          );
-          if (tmpAstar !== null) {
-            await db.executeTran(
-              conn,
-              "UPDATE userTable SET carId = ? WHERE orderId = ?",
-              [realloc.carId, realloc.orderId]
-            );
-            await db.executeTran(
-              conn,
-              "UPDATE orderTable SET nextPoint = ?, carToRoute = ?, \
-              pRoute = 0, pPoint = 0 WHERE orderId = ?",
-              [tmpAstar[1], tmpAstar, realloc.orderId]
-            );
-            await db.executeTran(
-              conn,
-              "UPDATE carTable SET status = 3 WHERE carId = ?",
-              [realloc.carId]
-            );
+              },
+            });
             allocFlag = true;
           }
         }
       }
+    }
+    await conn1.commit();
+    await conn1.query(unlock);
+  } catch (err) {
+    await conn1.rollback();
+    console.log(err);
+  } finally {
+    conn1.release();
+  }
 
-      // 現在割り当てられている車が命令を実行できない場合
-      if (!allocFlag) {
-        const car = db.extractElems(
-          await db.executeTran(
-            conn,
-            "SELECT carId, nowPoint, battery FROM carTable \
-            WHERE status = 1 AND battery >= 30 FOR UPDATE"
-          )
+  if (allocFlag) {
+    for (const allocate of allocates) {
+      allocFlag = false;
+      const carToRoute: Position[] | null = await Astar.manAstar(
+        allocate.car.nowPoint,
+        allocate.order.route[0][0],
+        passPoints
+      );
+      if (carToRoute !== null) {
+        const conn2 = await db.createNewConn();
+        try {
+          await conn2.beginTransaction();
+          await conn2.query(lockOWCW);
+          const orderEndAt = db.extractElem(
+            await db.executeTran(conn2, reqOrderEndAt, [allocate.order.orderId])
+          );
+          const latest = db.extractElem(
+            await db.executeTran(conn2, reqCarInfo, [allocate.car.carId])
+          );
+          if (
+            orderEndAt !== undefined &&
+            "endAt" in orderEndAt &&
+            orderEndAt["endAt"] === null &&
+            latest !== undefined &&
+            "nowPoint" in latest &&
+            latest["nowPoint"] !== undefined &&
+            "status" in latest &&
+            latest["status"] === 2
+          ) {
+            if (map.approx(allocate.car.nowPoint, latest["nowPoint"])) {
+              await db.executeTran(conn2, updOrderInfo, [
+                carToRoute[1],
+                carToRoute,
+                allocate.order.orderId,
+              ]);
+              await db.executeTran(conn2, updCarStatus, [allocate.car.carId]);
+            }
+          }
+          await conn2.commit();
+          await conn2.query(unlock);
+        } catch (err) {
+          await conn2.rollback();
+          console.log(err);
+        } finally {
+          conn2.release();
+        }
+        console.log(
+          "allocate orderId: " +
+            allocate.order.orderId +
+            ", carId: " +
+            allocate.car.carId
         );
-        if (route !== undefined && car !== undefined) {
-          for (const carId of car) {
-            if ("route" in route && "carId" in carId && "nowPoint" in carId) {
-              tmpAstar = astar.Astar(
-                carId["nowPoint"],
-                route["route"][0][0],
-                passPoints
-              );
-              if (tmpAstar !== null) {
-                await db.executeTran(
-                  conn,
-                  "UPDATE userTable SET carId = ? WHERE orderId = ?",
-                  [carId["carId"], realloc.orderId]
-                );
-                await db.executeTran(
-                  conn,
-                  "UPDATE orderTable SET nextPoint = ?, carToRoute = ? \
-                  pRoute = 0, pPoint = 0 WHERE orderId = ?",
-                  [tmpAstar[1], tmpAstar, realloc.orderId]
-                );
-                await db.executeTran(
-                  conn,
-                  "UPDATE carTable SET status = 3 WHERE carId = ?",
-                  [carId["carId"]]
-                );
-                await db.executeTran(
-                  conn,
-                  "UPDATE carTable SET status = 1 WHERE carId = ?",
-                  [realloc.carId]
-                );
-                allocFlag = true;
+      } else {
+        let cars: car[] = [];
+        const conn3 = await db.createNewConn();
+        try {
+          await conn3.beginTransaction();
+          await conn3.query(lockCR);
+          const carsInfo = db.extractElems(
+            await db.executeTran(conn3, getCarsInfo, [allocate.car.carId])
+          );
+          if (carsInfo !== undefined) {
+            for (const carInfo of carsInfo) {
+              if (
+                "BIN_TO_UUID(carId,1)" in carInfo &&
+                carInfo["BIN_TO_UUID(carId,1)"] !== undefined &&
+                "nowPoint" in carInfo &&
+                carInfo["nowPoint"] !== undefined
+              ) {
+                cars.push({
+                  carId: carInfo["BIN_TO_UUID(carId,1)"],
+                  nowPoint: carInfo["nowPoint"],
+                });
               }
             }
-            if (allocFlag) break;
+          }
+          await conn3.commit();
+          await conn3.query(unlock);
+        } catch (err) {
+          await conn3.rollback();
+          console.log(err);
+        } finally {
+          conn3.release();
+        }
+        for (const car of cars) {
+          const carToRoute: Position[] | null = await Astar.manAstar(
+            car.nowPoint,
+            allocate.order.route[0][0],
+            passPoints
+          );
+          if (carToRoute !== null) {
+            allocFlag = true;
+            const conn4 = await db.createNewConn();
+            try {
+              await conn4.beginTransaction();
+              await conn4.query(lockUWOWCW);
+              const orderEndAt = db.extractElem(
+                await db.executeTran(conn4, reqOrderEndAt, [
+                  allocate.order.orderId,
+                ])
+              );
+              const latest = db.extractElem(
+                await db.executeTran(conn4, reqCarInfo, [car.carId])
+              );
+              if (
+                orderEndAt !== undefined &&
+                "endAt" in orderEndAt &&
+                orderEndAt["endAt"] === null &&
+                latest !== undefined &&
+                "nowPoint" in latest &&
+                latest["nowPoint"] !== undefined &&
+                "status" in latest &&
+                latest["status"] === 1
+              ) {
+                if (map.approx(allocate.car.nowPoint, latest["nowPoint"])) {
+                  await db.executeTran(conn4, updUserInfo, [
+                    car.carId,
+                    allocate.order.orderId,
+                  ]);
+                  await db.executeTran(conn4, updOrderInfo, [
+                    carToRoute[1],
+                    carToRoute,
+                    allocate.order.orderId,
+                  ]);
+                  await db.executeTran(conn4, updCarStatus, [car.carId]);
+                }
+              }
+              await conn4.commit();
+              await conn4.query(unlock);
+            } catch (err) {
+              await conn4.rollback();
+              console.log(err);
+            } finally {
+              conn4.release();
+            }
+          }
+          console.log(
+            "allocate orderId: " +
+              allocate.order.orderId +
+              ", carId: " +
+              car.carId
+          );
+          if (allocFlag) {
+            break;
           }
         }
       }
     }
-    await conn.commit();
-  } catch (err) {
-    await conn.rollback();
-    console.log(err);
-  } finally {
-    await conn.query(unlock);
-    conn.release();
   }
-  console.timeEnd("alloc");
   setTimeout(() => allocatedCarTran(), 5000);
 }
 
