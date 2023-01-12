@@ -46,7 +46,9 @@ async function isAcceptableTran(userId: string): Promise<ApiResult> {
                 } else if (
                   carStatus !== undefined &&
                   "status" in carStatus &&
-                  (carStatus["status"] === 5 || carStatus["status"] === 6)
+                  (carStatus["status"] === 5 ||
+                    carStatus["status"] === 6 ||
+                    carStatus["status"] === 7)
                 ) {
                   result.reason =
                     "A problem has occurred with the car being used. \
