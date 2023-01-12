@@ -1,19 +1,10 @@
-import mysql from "mysql2/promise";
-import {
-  Position,
-  PassablePoint,
-  AllocatedCar,
-  proceed,
-  order,
-  car,
-} from "types";
+import { Position, PassablePoint, Allocated, order, car } from "types";
 import * as Astar from "api/scripts/notNotAstar";
 import * as db from "database";
 import * as map from "api/scripts/map";
 
 // car allocate
 export async function unallocateCarTran() {
-  console.log("called");
   let allocFlag: boolean = false;
   const lockURPRORCR =
     "LOCK TABLES userTable READ, passableTable READ, \
@@ -195,7 +186,7 @@ export async function allocatedCarTran() {
     "UPDATE userTable SET carId = UUID_TO_BIN(?,1) WHERE orderId = ?";
   const unlock = "UNLOCK TABLES";
 
-  let allocates: AllocatedCar[] = [];
+  let allocates: Allocated[] = [];
   let passPoints: PassablePoint[] = [];
   const conn1 = await db.createNewConn();
   try {
@@ -484,11 +475,11 @@ export async function intervalUserTran() {
       }
     }
     await conn.commit();
+    await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlock);
     conn.release();
   }
   setTimeout(() => intervalUserTran(), 5000);
@@ -510,159 +501,4 @@ export async function monitorOrderTran(): Promise<number[]> {
     conn.release();
   }
   return result;
-}
-
-// Advance car
-export async function progressTran(
-  connected: mysql.PoolConnection,
-  carId: string,
-  status: number
-): Promise<Position | undefined> {
-  let nextPosition: Position | undefined = undefined;
-  // carId から車を進ませるのに必要な情報を取得
-  const getOrderIdSql =
-    "SELECT orderId FROM userTable \
-    WHERE carId = UUID_TO_BIN(?, 1) AND endAt IS NULL FOR UPDATE";
-  const getParamsSql =
-    "SELECT nextPoint, arrival, finish, arrange, carToRoute, route, \
-    junkai, pRoute, pPoint FROM orderTable WHERE orderId = ? \
-    FOR UPDATE";
-  const arrangeOrderSql =
-    "UPDATE orderTable SET arrival = TRUE, arrange = TRUE, \
-    pRoute = 1, pPoint = 0, nextPoint = ? WHERE orderId = ?";
-  const arrangeCarSql =
-    "UPDATE carTable SET status = 4 WHERE carId = UUID_TO_BIN(?, 1)";
-  const notArrOrderSql =
-    "UPDATE orderTable SET nextPoint = ?, \
-    pPoint = pPoint + 1 WHERE orderId = ?";
-  const junkaiOrderSql =
-    "UPDATE orderTable SET nextPoint = ?, arrival = TRUE, \
-    pRoute = 1, pPoint = 0 WHERE orderId = ?";
-  const finishOrderSql =
-    "UPDATE orderTable SET nextPoint = NULL, arrival = TRUE, \
-    finish = TRUE, endAt = NOW() WHERE orderId = ?";
-  const finishCarSql =
-    "UPDATE carTable SET status = 2 WHERE carId = UUID_TO_BIN(?, 1)";
-  const arrivalOrderSql =
-    "UPDATE orderTable SET nextPoint = ?, arrival = TRUE, \
-    pRoute = pRoute + 1, pPoint = 0 WHERE orderId = ?";
-  const arrivalCarSql =
-    "UPDATE carTable SET status = 4 \
-    WHERE carId = UUID_TO_BIN(?, 1)";
-  const movingSql =
-    "UPDATE orderTable SET nextPoint = ?, pPoint = pPoint + 1 \
-    WHERE orderId = ?";
-
-  const userTable = db.extractElem(
-    await db.executeTran(connected, getOrderIdSql, [carId])
-  );
-  let orderId: number = 0;
-  if (
-    userTable !== undefined &&
-    "orderId" in userTable &&
-    userTable["orderId"] !== undefined
-  ) {
-    orderId = userTable["orderId"];
-  } else {
-    return nextPosition;
-  }
-
-  const orderTable = db.extractElem(
-    await db.executeTran(connected, getParamsSql, [orderId])
-  );
-  let param: proceed;
-  if (
-    orderTable !== undefined &&
-    "nextPoint" in orderTable &&
-    orderTable["nextPoint"] !== undefined &&
-    "arrival" in orderTable &&
-    orderTable["arrival"] !== undefined &&
-    "finish" in orderTable &&
-    orderTable["finish"] !== undefined &&
-    "arrange" in orderTable &&
-    orderTable["arrange"] !== undefined &&
-    "carToRoute" in orderTable &&
-    orderTable["carToRoute"] !== undefined &&
-    "route" in orderTable &&
-    orderTable["route"] !== undefined &&
-    "junkai" in orderTable &&
-    orderTable["junkai"] !== undefined &&
-    "pRoute" in orderTable &&
-    orderTable["pRoute"] !== undefined &&
-    "pPoint" in orderTable &&
-    orderTable["pPoint"] !== undefined
-  ) {
-    param = {
-      nextPoint: orderTable["nextPoint"],
-      arrival: orderTable["arrival"] ? true : false,
-      finish: orderTable["finish"] ? true : false,
-      arrange: orderTable["arrange"] ? true : false,
-      carToRoute: orderTable["carToRoute"],
-      route: orderTable["route"],
-      junkai: orderTable["junkai"] ? true : false,
-      pRoute: orderTable["pRoute"],
-      pPoint: orderTable["pPoint"],
-    };
-    console.log(param);
-    // 車が走行中で停留所に目的地にもいない場合
-    if (status === 3 && !param.arrival && !param.finish) {
-      // 車が経路の始点に向かっている時
-      if (!param.arrange) {
-        // 車が経路の始点についたら
-        if (param.carToRoute.length - 1 === param.pPoint) {
-          await db.executeTran(connected, arrangeOrderSql, [
-            param.route[0][1],
-            orderId,
-          ]);
-          await db.executeTran(connected, arrangeCarSql, [carId]);
-        }
-        // 車が経路の始点まで移動中なら
-        else if (param.carToRoute.length - 1 > param.pPoint) {
-          console.log("go to arrange position");
-          await db.executeTran(connected, notArrOrderSql, [
-            param.carToRoute[param.pPoint + 1],
-            orderId,
-          ]);
-        }
-      }
-      // 車が経路の始点についた後
-      else {
-        // 目的地についたら
-        if (
-          param.route.length === param.pRoute &&
-          param.route[param.pRoute - 1].length - 2 === param.pPoint
-        ) {
-          // 巡回する場合
-          if (param.junkai) {
-            await db.executeTran(connected, junkaiOrderSql, [
-              param.route[0][1],
-              orderId,
-            ]);
-          }
-          // 巡回しない場合
-          else {
-            await db.executeTran(connected, finishOrderSql, [orderId]);
-            await db.executeTran(connected, finishCarSql, [carId]);
-          }
-        }
-        // 停留所についたら
-        else if (param.route[param.pRoute - 1].length - 2 === param.pPoint) {
-          await db.executeTran(connected, arrivalOrderSql, [
-            param.route[param.pRoute][0],
-            orderId,
-          ]);
-          await db.executeTran(connected, arrivalCarSql, [carId]);
-        }
-        // 経路間移動中なら
-        else {
-          await db.executeTran(connected, movingSql, [
-            param.route[param.pRoute - 1][param.pPoint + 2],
-            orderId,
-          ]);
-        }
-      }
-      nextPosition = param.nextPoint;
-    }
-  }
-  return nextPosition;
 }

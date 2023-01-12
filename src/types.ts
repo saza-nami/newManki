@@ -4,7 +4,8 @@ export interface Access {
   ipAddress: string[];
 }
 
-export interface AllocatedCar {
+// 割り当て済み命令
+export interface Allocated {
   order: order;
   car: car;
 }
@@ -15,16 +16,10 @@ export interface ApiResult {
   reason?: string;
 }
 
-// 地点
-export interface Position {
-  lat: number /* 緯度　*/;
-  lng: number /* 経度 */;
-}
-
-// 通行可能領域
-export interface PassablePoint {
-  position: Position;
-  radius: number;
+// 車割り当てに必要な車情報
+export interface car {
+  carId: string;
+  nowPoint: Position;
 }
 
 // 地点情報
@@ -36,18 +31,26 @@ export interface Node {
   parent: number | null /* 親ノードの配列番号 */;
 }
 
+// 車割り当てに必要な命令情報
 export interface order {
   orderId: number;
   route: Position[][];
 }
 
-export interface car {
-  carId: string;
-  nowPoint: Position;
+// 通行可能領域
+export interface PassablePoint {
+  position: Position;
+  radius: number;
+}
+
+// 地点
+export interface Position {
+  lat: number /* 緯度　*/;
+  lng: number /* 経度 */;
 }
 
 // 経路走行に必要な情報
-export interface proceed {
+export interface Proceed {
   nextPoint: Position;
   arrival: boolean;
   finish: boolean;
