@@ -17,7 +17,7 @@ import ReqCarInfo from "api/admin/reqcarinfo";
 import AddPassPoint from "api/admin/addpasspoint";
 import DelPassPoint from "api/admin/delpasspoint";
 import TerminateAdmin from "api/admin/terminateadmin";
-import Astar from "api/astar/execastar";
+import Astar from "api/execastar";
 
 export default [
   CreateUserRouter,
