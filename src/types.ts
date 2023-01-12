@@ -5,9 +5,8 @@ export interface Access {
 }
 
 export interface AllocatedCar {
-  orderId: number;
-  carId: string;
-  nowPoint: Position;
+  order: order;
+  car: car;
 }
 
 // API の返り値
@@ -40,6 +39,11 @@ export interface Node {
 export interface order {
   orderId: number;
   route: Position[][];
+}
+
+export interface car {
+  carId: string;
+  nowPoint: Position;
 }
 
 // 経路走行に必要な情報

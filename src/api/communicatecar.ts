@@ -13,6 +13,7 @@ interface ReplyInfo extends ApiResult {
 }
 
 let lastLog: Access = { date: [0], ipAddress: ["anyonyomarubobo"] };
+let carStatus: number = 1;
 const lockCW = "LOCK TABLES carTable WRITE";
 const unlock = "UNLOCK TABLES";
 const addCar =
@@ -80,12 +81,12 @@ async function createReply(
           const carInfo = db.extractElem(
             await db.executeTran(conn, reqCarInfo, [carId])
           );
-          if (request === "next") {
-            if (
-              carInfo !== undefined &&
-              "status" in carInfo &&
-              carInfo["status"] !== undefined
-            ) {
+          if (
+            carInfo !== undefined &&
+            "status" in carInfo &&
+            carInfo["status"] !== undefined
+          ) {
+            if (request === "next") {
               result.succeeded = true;
               if (
                 carInfo["status"] === 5 ||
@@ -139,13 +140,7 @@ async function createReply(
                   }
                 }
               }
-            }
-          } else if (request === "ping") {
-            if (
-              carInfo !== undefined &&
-              "status" in carInfo &&
-              carInfo["status"] !== undefined
-            ) {
+            } else if (request === "ping") {
               result.succeeded = true;
               if (
                 carInfo["status"] === 5 ||
@@ -161,7 +156,6 @@ async function createReply(
                   carId,
                 ]);
                 result.sequence = rndSeq;
-                console.log("orderId " + orderId);
                 if (
                   orderId !== undefined &&
                   "orderId" in orderId &&
@@ -180,7 +174,13 @@ async function createReply(
                   }
                 }
                 if (carInfo["status"] === 3 || carInfo["status"] === 4) {
-                  result.response = "pong";
+                  if (carStatus === carInfo["status"]) {
+                    result.response = "pong";
+                  } else if (carInfo["status"] === 3) {
+                    result.response = "next";
+                  } else if (carInfo["status"] === 4) {
+                    result.response = "stop";
+                  }
                 } else if (
                   carInfo["status"] === 1 &&
                   "nowPoint" in carInfo &&
@@ -192,18 +192,19 @@ async function createReply(
                   result.response = "stop";
                 }
               }
+            } else if (request === "halt") {
+              await db.executeTran(conn, haltCar, [
+                rndSeq,
+                location,
+                battery,
+                carId,
+              ]);
+              result.succeeded = true;
+              result.response = "halt";
+            } else {
+              result.reason = "request error";
             }
-          } else if (request === "halt") {
-            await db.executeTran(conn, haltCar, [
-              rndSeq,
-              location,
-              battery,
-              carId,
-            ]);
-            result.succeeded = true;
-            result.response = "halt";
-          } else {
-            result.reason = "request error";
+            carStatus = carInfo["status"];
           }
         } else {
           result.reason = "auth error";
@@ -212,11 +213,11 @@ async function createReply(
       }
     }
     await conn.commit();
+    await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlock);
     conn.release();
   }
   return report(result);

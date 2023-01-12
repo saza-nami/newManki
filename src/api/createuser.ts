@@ -54,11 +54,11 @@ async function createUserTran(): Promise<CreateUserResult> {
       result.reason = "Users exceeded the limit.";
     }
     await conn.commit();
+    await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlock);
     conn.release();
   }
   return report(result);

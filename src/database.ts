@@ -81,7 +81,7 @@ async function executeTran<
     | mysql.OkPacket[]
     | mysql.ResultSetHeader
 >(
-  connected: mysql.PoolConnection,
+  connected: mysql.PoolConnection | mysql.Connection,
   sql: string
 ): Promise<[T, mysql.FieldPacket[]]>;
 
@@ -93,7 +93,7 @@ async function executeTran<
     | mysql.OkPacket[]
     | mysql.ResultSetHeader
 >(
-  connected: mysql.PoolConnection,
+  connected: mysql.PoolConnection | mysql.Connection,
   sql: string,
   values: any | any[] | { [param: string]: any }
 ): Promise<[T, mysql.FieldPacket[]]>;
@@ -106,7 +106,7 @@ async function executeTran<
     | mysql.OkPacket[]
     | mysql.ResultSetHeader
 >(
-  connected: mysql.PoolConnection,
+  connected: mysql.PoolConnection | mysql.Connection,
   options: mysql.QueryOptions
 ): Promise<[T, mysql.FieldPacket[]]>;
 
@@ -118,14 +118,14 @@ async function executeTran<
     | mysql.OkPacket[]
     | mysql.ResultSetHeader
 >(
-  connected: mysql.PoolConnection,
+  connected: mysql.PoolConnection | mysql.Connection,
   options: mysql.QueryOptions,
   values: any | any[] | { [param: string]: any }
 ): Promise<[T, mysql.FieldPacket[]]>;
 
 // Available only during transaction.
 async function executeTran(
-  connected: mysql.PoolConnection,
+  connected: mysql.PoolConnection | mysql.Connection,
   arg1: string | mysql.QueryOptions,
   arg2?: any | any[] | { [param: string]: any }
 ) {
@@ -186,5 +186,9 @@ async function createNewConn(): Promise<mysql.PoolConnection> {
   const conn = await createPool.getConnection();
   return conn;
 }
+async function createConn(): Promise<mysql.Connection> {
+  const conn = mysql.createConnection(CONNECTION_OPTIONS);
+  return conn;
+}
 
-export { executeTran, extractElem, extractElems, createNewConn };
+export { executeTran, extractElem, extractElems, createNewConn, createConn };

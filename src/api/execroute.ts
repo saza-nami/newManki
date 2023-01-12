@@ -97,11 +97,11 @@ async function reserveRoute(
       result.reason = "Illegal user.";
     }
     await conn.commit();
+    await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
     console.log(err);
   } finally {
-    await conn.query(unlock);
     conn.release();
   }
   return report(result);
