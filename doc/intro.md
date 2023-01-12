@@ -4,17 +4,14 @@ subtitle: Manki API Reference Manual
 author:
 - [KusaReMKN]
 ---
-
 # 名称
 
 **`intro`** -- Manki API の概要
-
 
 # 解説
 
 Manki API は Manki サービスの機能を提供する一連の Web API 群です。
 これらの API を利用することで NinJa の動作を制御することができます。
-
 
 # 定義
 
@@ -48,6 +45,7 @@ Manki API Reference Manual では次の用語を定義しています。
 地点
 : 地球上での位置を一意に定めるための緯度と経度の対。
 プログラム中では `Position` として次のように表現される。
+
 ```ts
 interface Position {
   lat: number,	// 緯度（°; 北緯を正）
@@ -67,9 +65,10 @@ NinJa が Manki の管理下にあることを（車が）正常状態にある�
 : 車が通行可能である領域を表す地点とその地点からの半径の対。
 プログラム中では、それに識別子を加えて `PassableInfo` として
 次のように表現される。
+
 ```ts
 interface PassableInfo {
-  position: Position[],	// 地点
+  position: Position,	// 地点
   radius: number,		// 半径（メートル）
   passableId: number,	// 識別子
 };
@@ -78,6 +77,7 @@ interface PassableInfo {
 経路名情報
 : 保存済みの経路に付けられた名前とその経路を利用可能であるかを表す真偽値の対。
 プログラム中では `PassableName` として次のように表現される。
+
 ```ts
 interface PassableName {
   routeName: string,	// 経路の名前
@@ -85,27 +85,22 @@ interface PassableName {
 };
 ```
 
-
 # 関連項目
 
 - Manki API Reference Manual の **astar**, **createUser**, **endRoute**,
-	**isAcceptable**, **monitorCar**, **proceedRoute**, **reqPassable**,
-	**reqRoute**, **routeName**, **saveRoute**, **terminate**
-
+  **isAcceptable**, **monitorCar**, **proceedRoute**, **reqPassable**,
+  **reqRoute**, **routeName**, **saveRoute**, **terminate**
 - Manki Programmer's Manual の **API**(3)
-
 
 # 作者
 
-Manki API の大部分は [saza-nami] によって書かれました。
-この文書は [saza-nami] によって書かれたものを元に
-[KusaReMKN] によって書かれました。
-
+Manki API の大部分は [saza-nami][saza-nami] によって書かれました。
+この文書は [saza-nami][saza-nami] によって書かれたものを元に
+[KusaReMKN][KusaReMKN] によって書かれました。
 
 # バグ
 
 予告なく変更が加えられる場合があります。
 
-
-[saza-nami]:	https://github.com/saza-nami
-[KusaReMKN]:	https://github.com/KusaReMKN
+[saza-nami]: https://github.com/saza-nami
+[KusaReMKN]: https://github.com/KusaReMKN

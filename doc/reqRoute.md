@@ -2,8 +2,8 @@
 title: reqRoute
 subtitle: Manki API Reference Manual
 author:
-- Takatomo0424
-- KusaReMKN
+  - Takatomo0424
+  - KusaReMKN
 ---
 # 名称
 
@@ -38,12 +38,12 @@ Content-Type: application/json; charset=utf-8
 **`reqRoute`** API は
 次の要素を持つオブジェクトを表す JSON 文字列を応答します。
 
-| キー名        | 値の型           | 値の内容                                                      |
-| ------------- | ---------------- | ------------------------------------------------------------- |
-| `succeeded` | `boolean`      | 処理に成功した場合に `true`                                 |
-| `route`     | `Position[][]` | 経路（成功時）                                                |
-| `dest`      | `Position[]`   | 経路に含まれる停留所（成功時）                                |
-| `junkai`    | `boolean`      | 巡回経路の場合に `true` そうでない場合は `false` (成功時) |
+| キー名        | 値の型           | 値の内容                                                          |
+| ------------- | ---------------- | ----------------------------------------------------------------- |
+| `succeeded` | `boolean`      | 処理に成功した場合に `true`                                     |
+| `route`     | `Position[][]` | 経路（成功時）                                                    |
+| `dest`      | `Position[]`   | 経路に含まれる停留所（成功時）                                    |
+| `junkai`    | `boolean`      | 巡回経路の場合に `true` そうでない場合に  `false` （成功時） |
 
 # 診断
 
@@ -57,8 +57,8 @@ Content-Type: application/json; charset=utf-8
 # 作者
 
 Manki API の大部分は [saza-nami][saza-nami] によって書かれました。
-この文書は [Takatomo0424][Takatomo0424] によって書かれたものを元に
-[KusaReMKN][KusaReMKN] によって書かれました。
+この文書は [Takatomo0424][takatomo0424] によって書かれたものを元に
+[KusaReMKN][kusaremkn] によって書かれました。
 
 # バグ
 
@@ -70,5 +70,5 @@ API の呼び出しそのものに失敗しているのかを判別する方法�
 `route` メンバの各要素から算出可能であり、完全に冗長です。
 
 [saza-nami]: https://github.com/saza-nami
-[Takatomo0424]: https://github.com/Takatomo0424
-[KusaReMKN]: https://github.com/KusaReMKN
+[takatomo0424]: https://github.com/Takatomo0424
+[kusaremkn]: https://github.com/KusaReMKN
