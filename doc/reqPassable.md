@@ -41,10 +41,10 @@ Content-Type: application/json; charset=utf-8
 **`reqPassable`** API は
 次の要素を持つオブジェクトを表す JSON 文字列を応答します。
 
-| キー名         | 値の型           | 値の内容                                          |
-| -------------- | ---------------- | --------------------------------------- |
-| `succeeded`    | `boolean`        | 処理に成功した場合に `true`             |
-| `passableInfo` | `PassableInfo[]` | 通行可能領域情報（成功時）              |
+| キー名         | 値の型         | 値の内容                                  |
+| -------------- | -------------- | ----------------------------------------- |
+| `succeeded`    | `boolean`      | 処理に成功した場合に `true`               |
+| `passableInfo` | `PassableInfo` | 通行可能領域情報（成功時）                |
 
 
 # 診断
