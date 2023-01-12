@@ -52,7 +52,7 @@ function thAstar(target: Position[], passPoints: PassablePoint[]): CreateRoute {
   }
   result.succeeded = true;
   result.route = resultNodes;
-  return report(result);
+  return result;
 }
 
 const result = thAstar(workerData.target, workerData.passPoints);

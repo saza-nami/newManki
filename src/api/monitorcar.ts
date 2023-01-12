@@ -74,7 +74,9 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             result.finish = orderStatus["finish"] ? true : false;
             result.arrange = orderStatus["arrange"] ? true : false;
             result.status =
-              carStatus["status"] == 5 || carStatus["status"] == 6
+              carStatus["status"] == 5 ||
+              carStatus["status"] == 6 ||
+              carStatus["status"] == 7
                 ? false
                 : true;
             result.nowPoint = carStatus["nowPoint"];
