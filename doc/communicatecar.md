@@ -1,0 +1,88 @@
+---
+title: communicateCar
+subtitle: Manki API Reference Manual
+author:
+  - [Takatomo0424]
+  - [KusaReMKN]
+---
+
+# 名称
+
+**`communicateCar`** -- 対車両通信を行う
+
+# 書式
+
+## HTTP ヘッダ
+
+```http
+POST /sendCarInfo HTTP/1.1
+Host: http://sazasub.kohga.local
+Accept: application/json; charset=utf-8
+Origin: http://www.kohga.local
+Content-Type: application/json; charset=utf-8
+```
+
+## JSON の内容
+
+| キー名     | 値の型     | 値の内容                                                             |
+| ---------- | ---------- | -------------------------------------------------------------------- |
+| `reqest`   | `string`   | API に要求する内容                                                   |
+| `location` | `Position` | 車の現在地                                                           |
+| `battery`  | `number`   | 車のバッテリー残量                                                   |
+| `carId`    | `string`   | API を利用する車の識別子（`resuest = "hello"` の時は不要）           |
+| `sequence` | `number`   | API を利用する車のシークエンス番号（`request = "hello"` の時は不要） |
+
+# 解説
+
+`communucateCar` API は
+
+`request` で指定された操作をし、車両と通信を行います。
+
+ここで、`request` の種類には以下の 4 つがあります。
+
+- `hello` : `carId` 発行要求
+- `ping` : 生存報告
+- `next` : 次に向かう地点の要求
+- `halt` : 異常発生報告
+
+## 応答
+
+`communicateCar` API は
+
+次の要素を持つオブジェクトを表す JSON 文字列を応答します。
+
+| キー名        | 値の型     | 値の内容                                              |
+| ------------- | ---------- | ----------------------------------------------------- |
+| `succeeded`   | `boolean`  | 操作に成功した場合に `true`                           |
+| `reason`      | `string`   | 操作に失敗した理由（失敗時）                          |
+| `responce`    | `string`   | 操作に対する応答（成功時）                            |
+| `sequence`    | `number`   | 次のシークエンス番号（成功時）                        |
+| `destination` | `Position` | 次に向かう地点情報（成功時・`request = "next"` の時） |
+
+# 診断
+
+エラー時に返される JSON の `reason` メンバの値は次の通りです。
+
+| `reason` メンバの値 | エラー内容                 |
+| ------------------- | -------------------------- |
+| `Invalid request.`  | 不正なリクエストです。     |
+| `request error.`    | リクエスト内容が不正です。 |
+| `auth error.`       | 車の認証に失敗しました。   |
+
+# 関連項目
+
+- Manki API Refernce Manual の **intro**
+- Manki Programmer's Manual の **API**(3)
+
+# 作者
+
+Manki API の大部分は [saza-nami][saza-nami] によって書かれました。
+この文書は [saza-nami][saza-nami] によって書かれました。
+
+# バグ
+
+見つかり次第追記します。
+
+[saza-nami]: https://github.com/saza-nami
+[takatomo0424]: https://github.com/Takatomo0424
+[kusaremkn]: https://github.com/KusaReMKN
