@@ -54,14 +54,14 @@ Content-Type: application/json; charset=utf-8
 | ------------- | ---------- | ----------------------------------------------------- |
 | `succeeded`   | `boolean`  | 操作に成功した場合に `true`                           |
 | `reason`      | `string`   | 操作に失敗した理由（失敗時）                          |
-| `responce`    | `string`   | 操作に対する応答（成功時）                            |
+| `response`    | `string`   | 操作に対する応答（成功時）                            |
 | `sequence`    | `number`   | 次のシークエンス番号（成功時）                        |
 | `destination` | `Position` | 次に向かう地点情報（成功時・`request = "next"` の時） |
 
 `response` の内容は JSON の内容の `request` によって変化します。
 
 - `request = "hello"` : 発行した `carId` が返ります。
-- `request = "ping"` : 車が割り当てられていないときは `stop, halt` 、車が割り当てられている時は `stop, next, pong, halt` のいずれかが返ります。
+- `request = "ping"` : 車が割り当てられていないときは `stop, halt` 、車が割り当てられている時は `stop, next, pong, halt` のいずれかが返ります。`pong` については車両が経路実行中の時、直前のレスポンスを繰り返す場合にのみ返ります。
 - `request = "next"` : 車の状態に応じて `next, stop, halt` のいずれかが返ります。
 - `request = "halt"` : `halt` が返ります。
 
