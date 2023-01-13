@@ -28,7 +28,7 @@ Content-Type: application/json; charset=utf-8
 | `reqest`   | `string`   | API に要求する内容                                                   |
 | `location` | `Position` | 車の現在地                                                           |
 | `battery`  | `number`   | 車のバッテリー残量                                                   |
-| `carId`    | `string`   | API を利用する車の識別子（`resuest = "hello"` の時は不要）           |
+| `carId`    | `string`   | API を利用する車の識別子（`request = "hello"` の時は不要）           |
 | `sequence` | `number`   | API を利用する車のシークエンス番号（`request = "hello"` の時は不要） |
 
 # 解説
