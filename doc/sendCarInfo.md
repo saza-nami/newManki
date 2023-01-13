@@ -25,7 +25,7 @@ Content-Type: application/json; charset=utf-8
 
 | キー名     | 値の型     | 値の内容                                                             |
 | ---------- | ---------- | -------------------------------------------------------------------- |
-| `reqest`   | `string`   | API に要求する内容                                                   |
+| `request`  | `string`   | API に要求する内容                                                   |
 | `location` | `Position` | 車の現在地                                                           |
 | `battery`  | `number`   | 車のバッテリー残量                                                   |
 | `carId`    | `string`   | API を利用する車の識別子（`request = "hello"` の時は不要）           |
@@ -57,6 +57,21 @@ Content-Type: application/json; charset=utf-8
 | `responce`    | `string`   | 操作に対する応答（成功時）                            |
 | `sequence`    | `number`   | 次のシークエンス番号（成功時）                        |
 | `destination` | `Position` | 次に向かう地点情報（成功時・`request = "next"` の時） |
+
+`response` の内容は JSON の内容の `request` によって変化します。
+
+- `request = "hello"` : 発行した `carId` が返ります。
+- `request = "ping"` : 車が割り当てられていないときは `stop, halt` 、車が割り当てられている時は `stop, next, pong, halt` のいずれかが返ります。
+- `request = "next"` : 車の状態に応じて `next, stop, halt` のいずれかが返ります。
+- `request = "halt"` : `halt` が返ります。
+
+また、レスポンスの意味は以下の通りです。
+
+- `carId` : 車の識別子
+- `stop` : 停止せよ
+- `next` : 次の地点に進め
+- `pong` : 現在の動作を継続せよ
+- `halt` : 異常状態 通告・了解
 
 # 診断
 
