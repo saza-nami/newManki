@@ -1,14 +1,13 @@
 ---
-title: communicateCar
+title: sendCarInfo
 subtitle: Manki API Reference Manual
 author:
-  - [Takatomo0424]
-  - [KusaReMKN]
+  - [saza-nami]
 ---
 
 # 名称
 
-**`communicateCar`** -- 対車両通信を行う
+**`sendCarInfo`** -- 対車両通信を行う
 
 # 書式
 
@@ -34,7 +33,7 @@ Content-Type: application/json; charset=utf-8
 
 # 解説
 
-`communucateCar` API は
+`sendCarInfo` API は
 
 `request` で指定された操作をし、車両と通信を行います。
 
@@ -47,7 +46,7 @@ Content-Type: application/json; charset=utf-8
 
 ## 応答
 
-`communicateCar` API は
+`sendCarInfo` API は
 
 次の要素を持つオブジェクトを表す JSON 文字列を応答します。
 

@@ -10,6 +10,7 @@ TARGETS=	intro.pdf \
 		reqRoute.pdf \
 		routeName.pdf \
 		saveRoute.pdf \
+		sendCarInfo.pdf \
 		terminate.pdf
 
 PANDOC=		pandoc
