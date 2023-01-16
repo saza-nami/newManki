@@ -77,11 +77,11 @@ Content-Type: application/json; charset=utf-8
 
 エラー時に返される JSON の `reason` メンバの値は次の通りです。
 
-| `reason` メンバの値 | エラー内容                 |
-| ------------------- | -------------------------- |
-| `Invalid request.`  | 不正なリクエストです。     |
-| `request error.`    | リクエスト内容が不正です。 |
-| `auth error.`       | 車の認証に失敗しました。   |
+| `reason` メンバの値               | エラー内容                   |
+| --------------------------------- | ---------------------------- |
+| `Invalid request.`                | 不正なリクエストです。       |
+| `The request cannot be executed.` | リクエストが実行できません。 |
+| `auth error.`                     | 車の認証に失敗しました。     |
 
 # 関連項目
 
