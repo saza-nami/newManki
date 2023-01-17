@@ -48,10 +48,11 @@ Content-Type: application/json; charset=utf-8
 
 エラー時に返される JSON の `reason` メンバの値は次の通りです。
 
-| `reason` メンバの値 | エラー内容                         |
-| ------------------- | ---------------------------------- |
-| `Invalid request.`  | 不正なリクエストです。             |
-| `Illegal user.`     | リクエストされたユーザが無効です。 |
+| `reason` メンバの値         | エラー内容                         |
+| --------------------------- | ---------------------------------- |
+| `Invalid request.`          | 不正なリクエストです。             |
+| `Illegal user.`             | リクエストされたユーザが無効です。 |
+| `None of the routes exist.` | 保存済み経路が存在しません。       |
 
 # 関連項目
 
@@ -60,9 +61,9 @@ Content-Type: application/json; charset=utf-8
 
 # 作者
 
-Manki API の大部分は [saza-nami] によって書かれました。
-この文書は [Takatomo0424] によって書かれたものを元に
-[KusaReMKN] によって書かれました。
+Manki API の大部分は [saza-nami][saza-nami] によって書かれました。
+この文書は [Takatomo0424][takatomo0424] によって書かれたものを元に
+[KusaReMKN][kusaremkn] によって書かれました。
 
 # バグ
 
