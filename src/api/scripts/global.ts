@@ -2,6 +2,7 @@ import mysql from "mysql2/promise";
 import * as db from "database";
 import { Position } from "types";
 
+/** ユーザ識別子が有効か */
 export async function existUserTran(
   connected: mysql.PoolConnection,
   userId: string
@@ -31,6 +32,7 @@ export async function existUserTran(
   return false;
 }
 
+/** 車識別子が有効か */
 export async function existCarTran(
   connected: mysql.PoolConnection,
   carId: string
@@ -54,6 +56,7 @@ export async function existCarTran(
   return false;
 }
 
+/** 車のシークエンス番号認証 */
 export async function authSequenceTran(
   conn: mysql.PoolConnection,
   carId: string,
@@ -73,6 +76,7 @@ export async function authSequenceTran(
   return false;
 }
 
+/** 経路から停留所を抽出 */
 export function routeToDest(route: Position[][]): Position[] {
   const result: Position[] = [];
   for (const elem of route) {
@@ -82,6 +86,7 @@ export function routeToDest(route: Position[][]): Position[] {
   return result;
 }
 
+/** 命令キャンセル */
 export async function executeEnd(
   conn: mysql.PoolConnection,
   userId: string
@@ -113,6 +118,7 @@ export async function executeEnd(
   return true;
 }
 
+/** ユーザ終了 */
 export async function executeTerminate(
   conn: mysql.PoolConnection,
   userId: string
