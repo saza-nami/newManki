@@ -30,7 +30,6 @@ async function reqCarInfo(adminId: string): Promise<ManageCars> {
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-
     if ((await admin.existAdminTran(conn, adminId)) === true) {
       const carInfo = db.extractElems(
         await db.executeTran(conn, reqCarinfoSql)
@@ -39,11 +38,17 @@ async function reqCarInfo(adminId: string): Promise<ManageCars> {
         for (const elem of carInfo) {
           console.log(elem);
           if (
+            elem !== undefined &&
             "BIN_TO_UUID(carId,1)" in elem &&
             "status" in elem &&
             "nowPoint" in elem &&
             "battery" in elem &&
-            "lastAt" in elem
+            "lastAt" in elem &&
+            elem["BIN_TO_UUID(carId,1)"] !== undefined &&
+            elem["status"] !== undefined &&
+            elem["nowPoint"] !== undefined &&
+            elem["battery"] !== undefined &&
+            elem["lastAt"] !== undefined
           ) {
             carInformations.push({
               carId: elem["BIN_TO_UUID(carId,1)"],

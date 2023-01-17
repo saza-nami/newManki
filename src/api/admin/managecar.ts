@@ -6,9 +6,13 @@ import * as db from "database";
 import * as global from "api/scripts/global";
 import report from "api/_report";
 
-const reqAdminPassSql =
+const reqAdminPass =
   "SELECT adminPassHash FROM adminTable \
   WHERE endAt IS NOT NULL AND adminName = ? LOCK IN SHARE MODE";
+const checkStatus =
+  "UPDATE carTable SET status = 6 WHERE carId = UUID_TO_BIN(?, 1) AND status = 5";
+const unavailable =
+  "UPDATE carTable SET status = 7 WHERE carId = UUID_TO_BIN(?, 1) AND status = 6";
 
 async function manageCar(
   adminName: string,
@@ -22,7 +26,7 @@ async function manageCar(
   try {
     await conn.beginTransaction();
     const admin = db.extractElem(
-      await db.executeTran(conn, reqAdminPassSql, [adminName])
+      await db.executeTran(conn, reqAdminPass, [adminName])
     );
     if (
       admin !== undefined &&
@@ -32,7 +36,9 @@ async function manageCar(
       if (await bcrypt.compare(adminPass, admin["adminPassHash"])) {
         if (await global.existCarTran(conn, carId)) {
           if (request === "check") {
+            await db.executeTran(conn, checkStatus, carId);
           } else if (request === "disable") {
+            await db.executeTran(conn, unavailable, carId);
           }
         }
       }

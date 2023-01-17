@@ -202,12 +202,12 @@ async function createReply(
               result.succeeded = true;
               result.response = "halt";
             } else {
-              result.reason = "request error";
+              result.reason = "The request cannot be executed.";
             }
             carStatus = carInfo["status"];
           }
         } else {
-          result.reason = "auth error";
+          result.reason = "auth error.";
           console.log("auth error");
         }
       }

@@ -56,10 +56,11 @@ async function loginAdmin(
           result.succeeded = true;
           result.adminId = adminId["BIN_TO_UUID(adminId, 1)"];
         }
+      } else {
+        result.reason = "Your password is wrong.";
       }
-      console.log(await bcrypt.compare(adminPass, admin["adminPassHash"]));
     } else {
-      result.reason = "Your name or password is wrong.";
+      result.reason = "Your name is wrong.";
     }
     await conn.commit();
   } catch (err) {

@@ -42,7 +42,7 @@ async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
           result.dest = JSON.parse(row["dest"]);
           result.junkai = row["junkai"] ? true : false;
         } else {
-          result.reason = "Unreachable!";
+          result.reason = "This route is not executable.";
         }
       } else {
         result.reason = "There is no route with that name.";

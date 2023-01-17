@@ -9,7 +9,6 @@ import report from "api/_report";
 
 interface SaveRoute extends ApiResult {
   routeName?: string;
-  message?: string;
 }
 
 const addRoute =
@@ -31,7 +30,7 @@ async function saveRoute(
       // 経路チェック
       const checkResult = map.checkRoute(route, passPoints);
       if (checkResult.reason !== undefined) {
-        result.message =
+        result.reason =
           "RouteNo." +
           checkResult.reason.route +
           " PointNo." +
