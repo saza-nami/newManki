@@ -7,10 +7,6 @@ import * as global from "api/scripts/global";
 import * as map from "api/scripts/map";
 import report from "api/_report";
 
-interface ExecRoute extends ApiResult {
-  message?: string;
-}
-
 const lockUWOWPR =
   "LOCK TABLES userTable WRITE, orderTable WRITE, passableTable READ";
 const unlock = "UNLOCK TABLES";
@@ -22,7 +18,7 @@ const addOrder = "INSERT INTO orderTable(route, dest, junkai) VALUES (?, ?, ?)";
 const reqLastOrder =
   "SELECT orderId FROM orderTable ORDER BY orderId DESC \
   LIMIT 1 LOCK IN SHARE MODE";
-const updUserorderId =
+const updUserOrderId =
   "UPDATE userTable SET orderId = ? WHERE userId = UUID_TO_BIN(?, 1)";
 const reqOrderEndAt =
   "SELECT endAt FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE";
@@ -31,8 +27,8 @@ async function reserveRoute(
   userId: string,
   route: Position[][],
   junkai: boolean
-): Promise<ExecRoute> {
-  const result: ExecRoute = { succeeded: false };
+): Promise<ApiResult> {
+  const result: ApiResult = { succeeded: false };
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
@@ -57,7 +53,7 @@ async function reserveRoute(
               "orderId" in created &&
               created["orderId"]
             ) {
-              await db.executeTran(conn, updUserorderId, [
+              await db.executeTran(conn, updUserOrderId, [
                 created["orderId"],
                 userId,
               ]);
@@ -78,20 +74,20 @@ async function reserveRoute(
                   "orderId" in created &&
                   created["orderId"]
                 ) {
-                  await db.executeTran(conn, updUserorderId, [
+                  await db.executeTran(conn, updUserOrderId, [
                     created["orderId"],
                     userId,
                   ]);
                   result.succeeded = true;
                 }
               } else {
-                result.message = "Reject new order!";
+                result.reason = "Reject new order!";
               }
             }
           }
         }
       } else {
-        result.message = "Unreachable!";
+        result.reason = "This route is not executable.";
       }
     } else {
       result.reason = "Illegal user.";
