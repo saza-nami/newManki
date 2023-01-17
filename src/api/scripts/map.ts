@@ -9,7 +9,7 @@ const stanDistance = 1;
 /** 地点生成分解能 */
 const resolution = 18;
 
-/* 経路の実行可能判定 */
+/** 経路の実行可能判定 */
 function checkRoute(route: Position[][], passPoints: PassablePoint[]) {
   for (let i = 0; i < route.length; i++) {
     for (let j = 0; j < route[i].length - 1; j++) {
@@ -27,7 +27,7 @@ function checkRoute(route: Position[][], passPoints: PassablePoint[]) {
   return { available: true };
 }
 
-/* databaseから通行可能領域点群を取得 */
+/** databaseから通行可能領域点群を取得 */
 async function getPassPos(
   connected: mysql.PoolConnection
 ): Promise<PassablePoint[]> {
@@ -59,7 +59,7 @@ function addNode(p: Position): Position[] {
   return nodes;
 }
 
-// 同一地点判定
+/** 同一地点判定*/
 function approx(A: Position, B: Position): boolean {
   const distance = dirdist.distanceTo(A, B);
   if (distance < stanDistance / 2) return true;
