@@ -3,7 +3,7 @@ import * as Astar from "api/scripts/notNotAstar";
 import * as db from "database";
 import * as map from "api/scripts/map";
 
-// car allocate
+/** 車未割当のユーザに対する車割り当て */
 export async function unallocateCarTran() {
   let allocFlag: boolean = false;
   const lockURPRORCR =
@@ -150,6 +150,7 @@ export async function unallocateCarTran() {
   setTimeout(() => unallocateCarTran(), 5000);
 }
 
+/** 車割り当て済みの車に対する車割り当て */
 export async function allocatedCarTran() {
   let allocFlag: boolean = false;
   const lockURPRORCR =
@@ -394,11 +395,16 @@ export async function allocatedCarTran() {
   setTimeout(() => allocatedCarTran(), 5000);
 }
 
-// Monitoring of cars communication cycles
+/** 対車両通信監視 */
 export async function intervalCarTran() {
-  const intervalSql =
+  const intervaladd =
     "UPDATE carTable SET intervalCount = intervalCount + 1 \
-    WHERE lastAt <= SUBTIME(NOW(), '00:00:10') && intevalCount < 3";
+    WHERE lastAt <= SUBTIME(NOW(), '00:00:10') \
+    AND (status != 5 OR status != 6 OR status != 7)  AND intevalCount < 3";
+  const intervalReset =
+    "UPDATE carTable SET intervalCount = 0 \
+    WHERE lastAt >= SUBTIME(NOW(), '00:00:10') \
+    AND (status != 5 OR status != 6 OR status != 7) AND intevalCount < 3";
   const errorCarsSql =
     "SELECT carId FROM carTable WHERE intevalCount = 3 FOR UPDATE";
   const stopCarSql = "UPDATE carTable SET status = 5 WHERE carId = ?";
@@ -412,7 +418,8 @@ export async function intervalCarTran() {
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    await db.executeTran(conn, intervalSql);
+    await db.executeTran(conn, intervaladd);
+    await db.executeTran(conn, intervalReset);
     const cars = db.extractElems(await db.executeTran(conn, errorCarsSql));
     if (cars !== undefined) {
       for (const err of cars) {
@@ -437,6 +444,7 @@ export async function intervalCarTran() {
   setTimeout(() => intervalCarTran(), 5000);
 }
 
+/** ユーザ自動終了 */
 export async function intervalUserTran() {
   const lockUWOWCW =
     "LOCK TABLES userTable WRITE, orderTable WRITE, carTable WRITE";
@@ -482,22 +490,4 @@ export async function intervalUserTran() {
     conn.release();
   }
   setTimeout(() => intervalUserTran(), 5000);
-}
-
-// Monitoring of order activity
-export async function monitorOrderTran(): Promise<number[]> {
-  const result: number[] = [];
-  const conn = await db.createNewConn();
-  const limitTimer = "24:00:00";
-
-  try {
-    await conn.beginTransaction();
-    await conn.commit();
-  } catch (err) {
-    await conn.rollback();
-    console.log(err);
-  } finally {
-    conn.release();
-  }
-  return result;
 }

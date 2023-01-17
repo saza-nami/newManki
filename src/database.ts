@@ -123,7 +123,7 @@ async function executeTran<
   values: any | any[] | { [param: string]: any }
 ): Promise<[T, mysql.FieldPacket[]]>;
 
-// Available only during transaction.
+/** トランザクション内でのみ実行できる execute 関数 */
 async function executeTran(
   connected: mysql.PoolConnection,
   arg1: string | mysql.QueryOptions,
@@ -135,7 +135,7 @@ async function executeTran(
   return result;
 }
 
-//
+/** データベースから返された単一の要素を取り出す */
 function extractElem(
   sqlResult: [
     (
@@ -159,6 +159,7 @@ function extractElem(
   return undefined;
 }
 
+/** データベースから返された複数の要素を取り出す */
 function extractElems(
   sqlResult: [
     (
@@ -182,6 +183,7 @@ function extractElems(
   return undefined;
 }
 
+/** pool接続をする */
 async function createNewConn(): Promise<mysql.PoolConnection> {
   const conn = await createPool.getConnection();
   return conn;

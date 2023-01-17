@@ -5,6 +5,7 @@ import { ApiResult, Access } from "types";
 import * as db from "database";
 import report from "api/_report";
 
+// Return value of this Web API
 interface CreateUserResult extends ApiResult {
   userId?: string; // UUID
 }
@@ -22,7 +23,7 @@ const getLastUser =
   "SELECT BIN_TO_UUID(userId, 1) FROM userTable \
   ORDER BY userId DESC, startAt DESC LIMIT 1";
 
-async function createUserTran(): Promise<CreateUserResult> {
+async function createUser(): Promise<CreateUserResult> {
   const result: CreateUserResult = { succeeded: false };
   const conn = await db.createNewConn();
   try {
@@ -37,6 +38,7 @@ async function createUserTran(): Promise<CreateUserResult> {
     ) {
       userCount = users["COUNT(*)"];
     }
+    // Compare with the limit number of people
     if (userCount < maxUsers) {
       await db.executeTran(conn, addUser);
       const userId = db.extractElem(await db.executeTran(conn, getLastUser));
@@ -92,7 +94,7 @@ export default express.Router().get("/createUser", async (req, res) => {
       lastLog.date.push(Date.now());
       lastLog.ipAddress.push(req.ip);
     }
-    res.json(await createUserTran());
+    res.json(await createUser());
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }

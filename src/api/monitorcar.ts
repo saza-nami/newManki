@@ -16,19 +16,18 @@ interface MonitorCar extends ApiResult {
   nowPoint?: Position;
   battery?: number;
   reserve?: boolean;
-  // 車が経路のどこまで進んだか出して
 }
 
 // arrival true を確認する
 const reqOrderStatusSql =
   "SELECT route, dest, arrival, finish, arrange FROM orderTable \
   WHERE orderId = (SELECT orderId FROM userTable \
-    WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL LOCK IN SHARE MODE) \
+    WHERE userId = UUID_TO_BIN(?, 1) AND endAt IS NULL LOCK IN SHARE MODE) \
     LOCK IN SHARE MODE";
 const reqCarStatusSql =
   "SELECT status, nowPoint, battery FROM carTable WHERE carId = \
   (SELECT carId FROM userTable \
-    WHERE userId = UUID_TO_BIN(?, 1) and endAt IS NULL LOCK IN SHARE MODE) \
+    WHERE userId = UUID_TO_BIN(?, 1) AND endAt IS NULL LOCK IN SHARE MODE) \
     LOCK IN SHARE MODE";
 
 async function monitorCar(userId: string): Promise<MonitorCar> {
@@ -48,7 +47,6 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
         console.log(orderStatus);
         console.log(carStatus);
         if (carStatus !== undefined) {
-          console.log("ok1");
           if (
             "route" in orderStatus &&
             orderStatus["route"] !== undefined &&
@@ -67,7 +65,6 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             "battery" in carStatus &&
             carStatus["battery"] !== undefined
           ) {
-            console.log("ok2");
             result.route = orderStatus["route"];
             result.dest = orderStatus["dest"];
             result.arrival = orderStatus["arrival"] ? true : false;
