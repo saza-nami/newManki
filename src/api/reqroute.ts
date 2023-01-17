@@ -1,9 +1,10 @@
 // 状態遷移図の既存経路選択で呼ばれるAPI
 
 import express from "express";
-import { ApiResult, Position } from "types";
+import { ApiResult, Position, PassablePoint } from "types";
 import * as db from "database";
 import * as global from "api/scripts/global";
+import * as map from "api/scripts/map";
 import report from "api/_report";
 
 interface RouteInfo extends ApiResult {
@@ -22,22 +23,27 @@ async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
-      const rows = db.extractElem(
+      const passPoints: PassablePoint[] = await map.getPassPos(conn);
+      const row = db.extractElem(
         await db.executeTran(conn, reqRouteInfo, [routeName])
       );
       if (
-        rows !== undefined &&
-        "route" in rows &&
-        rows["route"] !== undefined &&
-        "dest" in rows &&
-        rows["dest"] !== undefined &&
-        "junkai" in rows &&
-        rows["junkai"] !== undefined
+        row !== undefined &&
+        "route" in row &&
+        row["route"] !== undefined &&
+        "dest" in row &&
+        row["dest"] !== undefined &&
+        "junkai" in row &&
+        row["junkai"] !== undefined
       ) {
-        result.succeeded = true;
-        result.route = JSON.parse(rows["route"]);
-        result.dest = JSON.parse(rows["dest"]);
-        result.junkai = rows["junkai"] ? true : false;
+        if (map.checkRoute(row["route"], passPoints).available) {
+          result.succeeded = true;
+          result.route = JSON.parse(row["route"]);
+          result.dest = JSON.parse(row["dest"]);
+          result.junkai = row["junkai"] ? true : false;
+        } else {
+          result.reason = "Unreachable!";
+        }
       } else {
         result.reason = "There is no route with that name.";
       }
