@@ -2,7 +2,7 @@
 
 import express from "express";
 import { Worker } from "worker_threads";
-import { Position, PassablePoint } from "types";
+import { ApiResult, Position, PassablePoint } from "types";
 import * as db from "database";
 import * as global from "api/scripts/global";
 import * as map from "api/scripts/map";
@@ -13,12 +13,15 @@ async function createRoute(
   target: Position[],
   res: express.Response
 ) {
+  const result: ApiResult = { succeeded: false };
   let passPoints: PassablePoint[] = [];
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
       passPoints = await map.getPassPos(conn);
+    } else {
+      result.reason = "Illegal user.";
     }
     await conn.commit();
   } catch (err) {
@@ -28,6 +31,9 @@ async function createRoute(
     conn.release();
   }
 
+  if (result.reason === "Illegal user.") {
+    res.json(result);
+  }
   if (passPoints.length > 0) {
     const workerAstar = new Worker("./src/api/astar/workerrouter.js", {
       workerData: { target: target, passPoints: passPoints },
@@ -40,7 +46,8 @@ async function createRoute(
       report(r[0]);
     });
   } else {
-    res.json({ succeeded: false, reason: "Illegal user." });
+    result.reason = "passablePoint does not exist.";
+    res.json(result);
   }
 }
 

@@ -9,11 +9,13 @@ interface CreateRoute extends ApiResult {
   reason?: string;
 }
 
+/** スレッド化した astar 関数 */
 function thAstar(target: Position[], passPoints: PassablePoint[]): CreateRoute {
   const result: CreateRoute = { succeeded: false };
   let point = 0;
   for (const t of target) {
     point++;
+
     if (!map.isPassable(t, passPoints)) {
       result.reason = "Destination " + point + " is outside the passable area.";
       return report(result);
