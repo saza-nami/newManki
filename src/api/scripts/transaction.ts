@@ -201,23 +201,26 @@ export async function allocatedCarTran() {
     await conn1.query(lockURPRORCR);
     passPoints = await map.getPassPos(conn1);
     const lists = db.extractElems(await db.executeTran(conn1, getLists));
+    console.log(lists);
     if (lists !== undefined) {
       if (lists.length > 0) {
         for (const list of lists) {
           if (
             "orderId" in list &&
             list["orderId"] !== undefined &&
-            "BIN_TO_UUID(carId,1)" in list &&
-            list["BIN_TO_UUID(carId,1)"] !== undefined
+            "BIN_TO_UUID(carId, 1)" in list &&
+            list["BIN_TO_UUID(carId, 1)"] !== undefined
           ) {
             const order = db.extractElem(
               await db.executeTran(conn1, judgeEndAt, [list["orderId"]])
             );
             const car = db.extractElem(
               await db.executeTran(conn1, judgeStatus, [
-                list["BIN_TO_UUID(carId,1)"],
+                list["BIN_TO_UUID(carId, 1)"],
               ])
             );
+            console.log(order);
+            console.log(car);
             if (
               order !== undefined &&
               "endAt" in order &&
@@ -233,7 +236,7 @@ export async function allocatedCarTran() {
               allocates.push({
                 order: { orderId: list["orderId"], route: order["route"] },
                 car: {
-                  carId: list["BIN_TO_UUID(carId,1)"],
+                  carId: list["BIN_TO_UUID(carId, 1)"],
                   nowPoint: car["nowPoint"],
                 },
               });
@@ -287,6 +290,7 @@ export async function allocatedCarTran() {
                 carToRoute,
                 allocate.order.orderId,
               ]);
+              console.log("reallocate");
               await db.executeTran(conn2, updCarStatus, [allocate.car.carId]);
             }
           }
@@ -317,13 +321,13 @@ export async function allocatedCarTran() {
             if (carsInfo.length > 0) {
               for (const carInfo of carsInfo) {
                 if (
-                  "BIN_TO_UUID(carId,1)" in carInfo &&
-                  carInfo["BIN_TO_UUID(carId,1)"] !== undefined &&
+                  "BIN_TO_UUID(carId, 1)" in carInfo &&
+                  carInfo["BIN_TO_UUID(carId, 1)"] !== undefined &&
                   "nowPoint" in carInfo &&
                   carInfo["nowPoint"] !== undefined
                 ) {
                   cars.push({
-                    carId: carInfo["BIN_TO_UUID(carId,1)"],
+                    carId: carInfo["BIN_TO_UUID(carId, 1)"],
                     nowPoint: carInfo["nowPoint"],
                   });
                 }
