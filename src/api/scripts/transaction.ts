@@ -44,34 +44,41 @@ export async function unallocateCarTran() {
     const orderIds = db.extractElems(await db.executeTran(conn1, getOrderIds));
     const carsInfo = db.extractElems(await db.executeTran(conn1, getCarsInfo));
     if (orderIds !== undefined) {
-      for (const orderId of orderIds) {
-        if ("orderId" in orderId && orderId["orderId"] !== undefined) {
-          const route = db.extractElem(
-            await db.executeTran(conn1, reqRoute, [orderId["orderId"]])
-          );
-          if (
-            route !== undefined &&
-            "route" in route &&
-            route["route"] !== undefined
-          ) {
-            orders.push({ orderId: orderId["orderId"], route: route["route"] });
-            allocFlag = true;
+      if (orderIds.length > 0) {
+        for (const orderId of orderIds) {
+          if ("orderId" in orderId && orderId["orderId"] !== undefined) {
+            const route = db.extractElem(
+              await db.executeTran(conn1, reqRoute, [orderId["orderId"]])
+            );
+            if (
+              route !== undefined &&
+              "route" in route &&
+              route["route"] !== undefined
+            ) {
+              orders.push({
+                orderId: orderId["orderId"],
+                route: route["route"],
+              });
+              allocFlag = true;
+            }
           }
         }
       }
     }
     if (carsInfo !== undefined) {
-      for (const carInfo of carsInfo) {
-        if (
-          "BIN_TO_UUID(carId, 1)" in carInfo &&
-          carInfo["BIN_TO_UUID(carId, 1)"] !== undefined &&
-          "nowPoint" in carInfo &&
-          carInfo["nowPoint"] !== undefined
-        ) {
-          cars.push({
-            carId: carInfo["BIN_TO_UUID(carId, 1)"],
-            nowPoint: carInfo["nowPoint"],
-          });
+      if (carsInfo.length > 0) {
+        for (const carInfo of carsInfo) {
+          if (
+            "BIN_TO_UUID(carId, 1)" in carInfo &&
+            carInfo["BIN_TO_UUID(carId, 1)"] !== undefined &&
+            "nowPoint" in carInfo &&
+            carInfo["nowPoint"] !== undefined
+          ) {
+            cars.push({
+              carId: carInfo["BIN_TO_UUID(carId, 1)"],
+              nowPoint: carInfo["nowPoint"],
+            });
+          }
         }
       }
     }
@@ -195,41 +202,43 @@ export async function allocatedCarTran() {
     passPoints = await map.getPassPos(conn1);
     const lists = db.extractElems(await db.executeTran(conn1, getLists));
     if (lists !== undefined) {
-      for (const list of lists) {
-        if (
-          "orderId" in list &&
-          list["orderId"] !== undefined &&
-          "BIN_TO_UUID(carId,1)" in list &&
-          list["BIN_TO_UUID(carId,1)"] !== undefined
-        ) {
-          const order = db.extractElem(
-            await db.executeTran(conn1, judgeEndAt, [list["orderId"]])
-          );
-          const car = db.extractElem(
-            await db.executeTran(conn1, judgeStatus, [
-              list["BIN_TO_UUID(carId,1)"],
-            ])
-          );
+      if (lists.length > 0) {
+        for (const list of lists) {
           if (
-            order !== undefined &&
-            "endAt" in order &&
-            order["endAt"] === null &&
-            "route" in order &&
-            order["route"] !== undefined &&
-            car !== undefined &&
-            "status" in car &&
-            car["status"] === 2 &&
-            "nowPoint" in car &&
-            car["nowPoint"] !== undefined
+            "orderId" in list &&
+            list["orderId"] !== undefined &&
+            "BIN_TO_UUID(carId,1)" in list &&
+            list["BIN_TO_UUID(carId,1)"] !== undefined
           ) {
-            allocates.push({
-              order: { orderId: list["orderId"], route: order["route"] },
-              car: {
-                carId: list["BIN_TO_UUID(carId,1)"],
-                nowPoint: car["nowPoint"],
-              },
-            });
-            allocFlag = true;
+            const order = db.extractElem(
+              await db.executeTran(conn1, judgeEndAt, [list["orderId"]])
+            );
+            const car = db.extractElem(
+              await db.executeTran(conn1, judgeStatus, [
+                list["BIN_TO_UUID(carId,1)"],
+              ])
+            );
+            if (
+              order !== undefined &&
+              "endAt" in order &&
+              order["endAt"] === null &&
+              "route" in order &&
+              order["route"] !== undefined &&
+              car !== undefined &&
+              "status" in car &&
+              car["status"] === 2 &&
+              "nowPoint" in car &&
+              car["nowPoint"] !== undefined
+            ) {
+              allocates.push({
+                order: { orderId: list["orderId"], route: order["route"] },
+                car: {
+                  carId: list["BIN_TO_UUID(carId,1)"],
+                  nowPoint: car["nowPoint"],
+                },
+              });
+              allocFlag = true;
+            }
           }
         }
       }
@@ -305,17 +314,19 @@ export async function allocatedCarTran() {
             await db.executeTran(conn3, getCarsInfo, [allocate.car.carId])
           );
           if (carsInfo !== undefined) {
-            for (const carInfo of carsInfo) {
-              if (
-                "BIN_TO_UUID(carId,1)" in carInfo &&
-                carInfo["BIN_TO_UUID(carId,1)"] !== undefined &&
-                "nowPoint" in carInfo &&
-                carInfo["nowPoint"] !== undefined
-              ) {
-                cars.push({
-                  carId: carInfo["BIN_TO_UUID(carId,1)"],
-                  nowPoint: carInfo["nowPoint"],
-                });
+            if (carsInfo.length > 0) {
+              for (const carInfo of carsInfo) {
+                if (
+                  "BIN_TO_UUID(carId,1)" in carInfo &&
+                  carInfo["BIN_TO_UUID(carId,1)"] !== undefined &&
+                  "nowPoint" in carInfo &&
+                  carInfo["nowPoint"] !== undefined
+                ) {
+                  cars.push({
+                    carId: carInfo["BIN_TO_UUID(carId,1)"],
+                    nowPoint: carInfo["nowPoint"],
+                  });
+                }
               }
             }
           }
@@ -422,14 +433,16 @@ export async function intervalCarTran() {
     await db.executeTran(conn, intervalReset);
     const cars = db.extractElems(await db.executeTran(conn, errorCarsSql));
     if (cars !== undefined) {
-      for (const err of cars) {
-        if ("carId" in err) {
-          const order = db.extractElem(
-            await db.executeTran(conn, stopOrderSql, err["carId"])
-          );
-          await db.executeTran(conn, stopCarSql, [err["carId"]]);
-          if (order !== undefined && "userId" in order) {
-            await db.executeTran(conn, updateOrderSql, [order["orderId"]]);
+      if (cars.length > 0) {
+        for (const err of cars) {
+          if ("carId" in err) {
+            const order = db.extractElem(
+              await db.executeTran(conn, stopOrderSql, err["carId"])
+            );
+            await db.executeTran(conn, stopCarSql, [err["carId"]]);
+            if (order !== undefined && "userId" in order) {
+              await db.executeTran(conn, updateOrderSql, [order["orderId"]]);
+            }
           }
         }
       }
@@ -467,16 +480,18 @@ export async function intervalUserTran() {
     await conn.query(lockUWOWCW);
     const userTable = db.extractElems(await db.executeTran(conn, getUserSql));
     if (userTable !== undefined) {
-      for (const elem of userTable) {
-        if ("userId" in elem && "orderId" in elem && "carId" in elem) {
-          if (elem["userId"] !== null) {
-            await db.executeTran(conn, freeUserSql, [elem["userId"]]);
-          }
-          if (elem["orderId"] !== null) {
-            await db.executeTran(conn, freeOrderSql, [elem["orderId"]]);
-          }
-          if (elem["carId"] !== null) {
-            await db.executeTran(conn, freeCarSql, [elem["carId"]]);
+      if (userTable.length > 0) {
+        for (const elem of userTable) {
+          if ("userId" in elem && "orderId" in elem && "carId" in elem) {
+            if (elem["userId"] !== null) {
+              await db.executeTran(conn, freeUserSql, [elem["userId"]]);
+            }
+            if (elem["orderId"] !== null) {
+              await db.executeTran(conn, freeOrderSql, [elem["orderId"]]);
+            }
+            if (elem["carId"] !== null) {
+              await db.executeTran(conn, freeCarSql, [elem["carId"]]);
+            }
           }
         }
       }

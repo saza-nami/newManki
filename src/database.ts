@@ -148,15 +148,12 @@ function extractElem(
     mysql.FieldPacket[]
   ]
 ): mysql.RowDataPacket | undefined {
-  if (
-    Array.isArray(sqlResult) &&
-    Array.isArray(sqlResult[0]) &&
-    sqlResult[0].length == 1
-  ) {
+  if (Array.isArray(sqlResult) && Array.isArray(sqlResult[0])) {
     const row = sqlResult[0][0];
     return row as mysql.RowDataPacket;
+  } else {
+    return undefined;
   }
-  return undefined;
 }
 
 /** データベースから返された複数の要素を取り出す */
@@ -172,15 +169,12 @@ function extractElems(
     mysql.FieldPacket[]
   ]
 ): mysql.RowDataPacket[] | undefined {
-  if (
-    Array.isArray(sqlResult) &&
-    Array.isArray(sqlResult[0]) &&
-    sqlResult[0].length > 0
-  ) {
+  if (Array.isArray(sqlResult) && Array.isArray(sqlResult[0])) {
     const row = sqlResult[0];
     return row as mysql.RowDataPacket[];
+  } else {
+    return undefined;
   }
-  return undefined;
 }
 
 /** pool接続をする */
