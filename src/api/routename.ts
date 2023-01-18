@@ -27,21 +27,26 @@ async function routeNames(userId: string): Promise<RouteInfo> {
       const passPoints: PassablePoint[] = await map.getPassPos(conn);
       const rows = db.extractElems(await db.executeTran(conn, getRouteNames));
       const passableNames: PassableName[] = [];
-
+      console.log(rows);
       if (rows !== undefined) {
-        for (const elem of rows) {
-          if ("routeName" in elem && "route" in elem) {
-            const routeName = elem["routeName"];
-            const route = JSON.parse(elem["route"]);
-            const checkResult = map.checkRoute(route, passPoints);
-            passableNames.push({
-              routeName: routeName,
-              available: checkResult.available,
-            });
+        if (rows.length === 0) {
+          result.succeeded = true;
+          result.passableNames = [];
+        } else {
+          for (const elem of rows) {
+            if ("routeName" in elem && "route" in elem) {
+              const routeName = elem["routeName"];
+              const route = JSON.parse(elem["route"]);
+              const checkResult = map.checkRoute(route, passPoints);
+              passableNames.push({
+                routeName: routeName,
+                available: checkResult.available,
+              });
+              result.succeeded = true;
+              result.passableNames = passableNames;
+            }
           }
         }
-      } else {
-        result.reason = "None of the routes exist.";
       }
     } else {
       result.reason = "Illegal user.";
