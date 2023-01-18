@@ -13,7 +13,7 @@ export interface Allocated {
 // API の返り値
 export interface ApiResult {
   succeeded: boolean;
-  reason?: string;
+  reason?: string | Error | unknown;
 }
 
 // 車割り当てに必要な車情報
