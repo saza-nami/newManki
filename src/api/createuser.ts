@@ -37,28 +37,29 @@ async function createUser(): Promise<CreateUserResult> {
       users["COUNT(*)"] !== undefined
     ) {
       userCount = users["COUNT(*)"];
-    }
-    // Compare with the limit number of people
-    if (userCount < maxUsers) {
-      await db.executeTran(conn, addUser);
-      const userId = db.extractElem(await db.executeTran(conn, getLastUser));
-      if (
-        userId !== undefined &&
-        "BIN_TO_UUID(userId, 1)" in userId &&
-        userId["BIN_TO_UUID(userId, 1)"] !== undefined
-      ) {
-        result.succeeded = true;
-        result.userId = userId["BIN_TO_UUID(userId, 1)"];
+      // Compare with the limit number of people
+      if (userCount < maxUsers) {
+        await db.executeTran(conn, addUser);
+        const userId = db.extractElem(await db.executeTran(conn, getLastUser));
+        if (
+          userId !== undefined &&
+          "BIN_TO_UUID(userId, 1)" in userId &&
+          userId["BIN_TO_UUID(userId, 1)"] !== undefined
+        ) {
+          result.succeeded = true;
+          result.userId = userId["BIN_TO_UUID(userId, 1)"];
+        } else {
+          result.reason = "User creation failed.";
+        }
       } else {
-        result.reason = "User creation failed.";
+        result.reason = "Users exceeded the limit.";
       }
-    } else {
-      result.reason = "Users exceeded the limit.";
     }
     await conn.commit();
     await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
+    result.reason = err as string;
     console.log(err);
   } finally {
     conn.release();
