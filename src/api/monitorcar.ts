@@ -20,7 +20,7 @@ interface MonitorCar extends ApiResult {
 }
 
 // arrival true を確認する
-const lockORCR = "LOCK TABLES orderTable READ, carTable READ";
+const lockORCR = "LOCK TABLES userTable READ, orderTable READ, carTable READ";
 const unlock = "UNLOCK TABLES";
 const reqOrderStatusSql =
   "SELECT route, dest, arrival, finish, arrange, junkai FROM orderTable \
