@@ -158,24 +158,6 @@ async function createReply(
                   carId,
                 ]);
                 result.sequence = rndSeq;
-                console.log(orderId);
-                if (
-                  orderId !== undefined &&
-                  "orderId" in orderId &&
-                  orderId["orderId"] !== undefined
-                ) {
-                  const destination = db.extractElem(
-                    await db.executeTran(conn, reqNext, [orderId["orderId"]])
-                  );
-                  console.log(destination);
-                  if (
-                    destination !== undefined &&
-                    "nextPoint" in destination &&
-                    destination["nextPoint"] !== undefined
-                  ) {
-                    result.destination = destination["nextPoint"];
-                  }
-                }
                 if (carInfo["status"] === 3 || carInfo["status"] === 4) {
                   if (carStatus === carInfo["status"]) {
                     result.response = "pong";
@@ -184,14 +166,7 @@ async function createReply(
                   } else if (carInfo["status"] === 4) {
                     result.response = "stop";
                   }
-                } else if (
-                  carInfo["status"] === 1 &&
-                  "nowPoint" in carInfo &&
-                  carInfo["nowPoint"] !== undefined
-                ) {
-                  result.response = "stop";
-                  result.destination = carInfo["nowPoint"];
-                } else if (carInfo["status"] === 2) {
+                } else if (carInfo["status"] === 1 || carInfo["status"] === 2) {
                   result.response = "stop";
                 }
               }
