@@ -30,6 +30,16 @@ Content-Type: application/json; charset=utf-8
 | `data`      | `Position[][]` | 保存する経路                 |
 | `junkai`    | `boolean`      | 巡回経路のときに真           |
 
+### 制約
+
+#### `routeName`
+
+経路保存に使用できる `routeName` の長さは 255 文字までです。また、重複した名前を付けることはできません。
+
+#### `data`
+
+経路保存に使用できる `data` のサイズは 67MB までです。
+
 # 解説
 
 **`saveRoute`** API は
@@ -64,7 +74,6 @@ Content-Type: application/json; charset=utf-8
 | `Invalid request.`                            | 不正なリクエストです。                         |
 | `Illegal user.`                               | リクエストされたユーザが無効です。             |
 | `RouteNo. ~ PointNo. ~ could not be reached.` | ルート  ~ の地点 ~  に到達できませんでした。 |
-| `Database err: ~`                             | データベースで ~ によりエラーが発生しました。 |
 | その他                                          | 何らかの原因で catch されたエラーです。        |
 
 # 関連項目
