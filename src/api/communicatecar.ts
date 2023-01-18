@@ -26,7 +26,7 @@ const reqOrderId =
   "SELECT orderId FROM userTable \
   WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
 const reqNext =
-  "SELECE nextPoint FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE";
+  "SELECT nextPoint FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE";
 const reqCarInfo =
   "SELECT status, nowPoint FROM carTable \
   WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
@@ -95,12 +95,14 @@ async function createReply(
               ) {
                 result.response = "halt";
               } else {
-                await db.executeTran(conn, updCarInfo, [
-                  rndSeq,
-                  location,
-                  battery,
-                  carId,
-                ]);
+                console.log(
+                  await db.executeTran(conn, updCarInfo, [
+                    rndSeq,
+                    location,
+                    battery,
+                    carId,
+                  ])
+                );
                 result.sequence = rndSeq;
                 if (
                   carInfo["status"] === 1 ||
@@ -216,6 +218,10 @@ async function createReply(
     await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
+    result.reason = err;
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
     conn.release();
