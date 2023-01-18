@@ -5,7 +5,7 @@ import * as admin from "api/admin/admin";
 import * as tran from "api/scripts/transaction";
 
 const app = express();
-const port = 3001;
+const port = 80;
 
 const corsOptions: cors.CorsOptions = {
   origin: [
