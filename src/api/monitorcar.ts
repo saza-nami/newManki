@@ -20,6 +20,8 @@ interface MonitorCar extends ApiResult {
 }
 
 // arrival true を確認する
+const lockORCR = "LOCK TABLES orderTable READ, carTable READ";
+const unlock = "UNLOCK TABLES";
 const reqOrderStatusSql =
   "SELECT route, dest, arrival, finish, arrange, junkai FROM orderTable \
   WHERE orderId = (SELECT orderId FROM userTable \
@@ -37,6 +39,7 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
+    await conn.query(lockORCR);
     if ((await global.existUserTran(conn, userId)) === true) {
       const orderStatus = db.extractElem(
         await db.executeTran(conn, reqOrderStatusSql, [userId])
@@ -115,8 +118,13 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
       result.reason = "Illegal user.";
     }
     await conn.commit();
+    await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
+    result.reason = err;
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
     conn.release();
