@@ -24,7 +24,7 @@ const reqLastCarId =
   ORDER BY carId DESC, lastAt DESC LIMIT 1 LOCK IN SHARE MODE";
 const reqOrderId =
   "SELECT orderId FROM userTable \
-  WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
+  WHERE carId = UUID_TO_BIN(?, 1) ORDER BY orderId DESC LOCK IN SHARE MODE";
 const reqNext =
   "SELECT nextPoint FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE";
 const reqCarInfo =
@@ -158,6 +158,7 @@ async function createReply(
                   carId,
                 ]);
                 result.sequence = rndSeq;
+                console.log(orderId);
                 if (
                   orderId !== undefined &&
                   "orderId" in orderId &&
@@ -166,7 +167,7 @@ async function createReply(
                   const destination = db.extractElem(
                     await db.executeTran(conn, reqNext, [orderId["orderId"]])
                   );
-                  console.log("dest " + destination);
+                  console.log(destination);
                   if (
                     destination !== undefined &&
                     "nextPoint" in destination &&
