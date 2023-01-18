@@ -110,22 +110,6 @@ async function createReply(
                   carInfo["status"] === 4
                 ) {
                   result.response = "stop";
-                  if (
-                    orderId !== undefined &&
-                    "orderId" in orderId &&
-                    orderId["orderId"] !== undefined
-                  ) {
-                    const destination = db.extractElem(
-                      await db.executeTran(conn, reqNext, [orderId["orderId"]])
-                    );
-                    if (
-                      destination !== undefined &&
-                      "nextPoint" in destination &&
-                      destination["nextPoint"] !== undefined
-                    ) {
-                      result.destination = destination["nextPoint"];
-                    }
-                  }
                 }
                 if (carInfo["status"] === 3) {
                   result.response = "next";
@@ -323,7 +307,7 @@ async function progressTran(
         // 目的地についたら
         if (
           param.route.length === param.pRoute &&
-          param.route[param.pRoute - 1].length - 2 === param.pPoint
+          param.route[param.pRoute - 1].length - 1 === param.pPoint
         ) {
           // 巡回する場合
           if (param.junkai) {
@@ -339,7 +323,7 @@ async function progressTran(
           }
         }
         // 停留所についたら
-        else if (param.route[param.pRoute - 1].length - 2 === param.pPoint) {
+        else if (param.route[param.pRoute - 1].length - 1 === param.pPoint) {
           await db.executeTran(connected, arrivalOrderSql, [
             param.route[param.pRoute][0],
             orderId,
