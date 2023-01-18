@@ -73,8 +73,11 @@ Content-Type: application/json; charset=utf-8
 | ----------------------------------------------- | ---------------------------------------------- |
 | `Invalid request.`                            | 不正なリクエストです。                         |
 | `Illegal user.`                               | リクエストされたユーザが無効です。             |
+| `routeName is too long.`                      | `routeName` が長すぎます。                   |
+| `route is too long.`                          | `route` が長すぎます。                       |
+| `Duplicate routeName.`                        | `routeName` が重複しています。               |
 | `RouteNo. ~ PointNo. ~ could not be reached.` | ルート  ~ の地点 ~  に到達できませんでした。 |
-| その他                                          | 何らかの原因で catch されたエラーです。        |
+| その他                                          | 例外により catch されたエラーです。            |
 
 # 関連項目
 
