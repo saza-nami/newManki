@@ -12,6 +12,7 @@ interface MonitorCar extends ApiResult {
   arrival?: boolean;
   finish?: boolean;
   arrange?: boolean;
+  junkai?: boolean;
   status?: boolean;
   nowPoint?: Position;
   battery?: number;
@@ -20,7 +21,7 @@ interface MonitorCar extends ApiResult {
 
 // arrival true を確認する
 const reqOrderStatusSql =
-  "SELECT route, dest, arrival, finish, arrange FROM orderTable \
+  "SELECT route, dest, arrival, finish, arrange, junkai FROM orderTable \
   WHERE orderId = (SELECT orderId FROM userTable \
     WHERE userId = UUID_TO_BIN(?, 1) AND endAt IS NULL LOCK IN SHARE MODE) \
     LOCK IN SHARE MODE";
@@ -58,6 +59,8 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             orderStatus["finish"] !== undefined &&
             "arrange" in orderStatus &&
             orderStatus["arrange"] !== undefined &&
+            "junkai" in orderStatus &&
+            orderStatus["junkai"] !== undefined &&
             "status" in carStatus &&
             carStatus["status"] !== undefined &&
             "nowPoint" in carStatus &&
@@ -70,6 +73,7 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             result.arrival = orderStatus["arrival"] ? true : false;
             result.finish = orderStatus["finish"] ? true : false;
             result.arrange = orderStatus["arrange"] ? true : false;
+            result.junkai = orderStatus["junkai"] ? true : false;
             result.status =
               carStatus["status"] == 5 ||
               carStatus["status"] == 6 ||
@@ -92,13 +96,16 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             "finish" in orderStatus &&
             orderStatus["finish"] !== undefined &&
             "arrange" in orderStatus &&
-            orderStatus["arrange"] !== undefined
+            orderStatus["arrange"] !== undefined &&
+            "junkai" in orderStatus &&
+            orderStatus["junkai"] !== undefined
           ) {
             result.route = orderStatus["route"];
             result.dest = orderStatus["dest"];
             result.arrival = orderStatus["arrival"] ? true : false;
             result.finish = orderStatus["finish"] ? true : false;
             result.arrange = orderStatus["arrange"] ? true : false;
+            result.junkai = orderStatus["junkai"] ? true : false;
             result.reserve = false;
           }
         }
