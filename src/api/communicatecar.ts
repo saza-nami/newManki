@@ -202,7 +202,7 @@ async function progressTran(
     pRoute = 1, pPoint = 0 WHERE orderId = ?";
   const finishOrder =
     "UPDATE orderTable SET nextPoint = null, arrival = TRUE, \
-    finish = TRUE, endAt = NOW() WHERE orderId = ?";
+    finish = TRUE, endAt = NOW(), pPoint = pPoint + 1 WHERE orderId = ?";
   const finishCar =
     "UPDATE carTable SET status = 2 WHERE carId = UUID_TO_BIN(?, 1)";
   const arrivalOrder =
@@ -280,8 +280,7 @@ async function progressTran(
           ]);
           await db.executeTran(connected, arrangeCar, [carId]);
           nextPosition = null;
-        }
-        if (
+        } else if (
           param.carToRoute.length > 2 &&
           param.pPoint + 1 === param.carToRoute.length - 1
         ) {
