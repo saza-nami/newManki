@@ -21,13 +21,17 @@ PANDOCFLAGS=	--pdf-engine=xelatex \
 RM=		rm -f
 SHELL=		/bin/sh
 
-all: $(TARGETS)
+all: $(TARGETS) admin
 
 .SUFFIXES:
 .SUFFIXES: .md .pdf
 
 .md.pdf:
 	$(PANDOC) $(PANDOCFLAGS) $< -o $@
+
+.PHONY: admin
+admin:
+	(cd admin; $(MAKE))
 
 .PHONY: clean
 clean:
