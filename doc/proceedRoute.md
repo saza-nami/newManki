@@ -48,11 +48,12 @@ Content-Type: application/json; charset=utf-8
 
 エラー時に返される JSON の `reason` メンバの値は次の通りです。
 
-| `reason` メンバの値                         | エラー内容                         |
-| ------------------------------------------- | ---------------------------------- |
-| `Invalid request.`                          | 不正なリクエストです。             |
-| `Illegal user.`                             | リクエストされたユーザが無効です。 |
-| `The car you are using is not at the stop.` | 利用中の車が停止していません。     |
+| `reason` メンバの値                         | エラー内容                          |
+| ------------------------------------------- | ----------------------------------- |
+| `Invalid request.`                          | 不正なリクエストです。              |
+| `Illegal user.`                             | リクエストされたユーザが無効です。  |
+| `The car you are using is not at the stop.` | 利用中の車が停止していません。      |
+| その他                                      | 例外により catch されたエラーです。 |
 
 # 関連項目
 

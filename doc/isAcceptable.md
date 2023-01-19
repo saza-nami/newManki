@@ -55,6 +55,7 @@ Content-Type: application/json; charset=utf-8
 | `There is a problem with the system status. Please contact the administrator.`      | システム状態に問題があります。                   |
 | `A new route cannot be created because the instruction is being executed.`          | 命令実行中のため、新しい経路を実行できません。   |
 | `A new route cannot be created because a car assignment is in progress.`            | 車割り当て中のため、新しい経路を実行できません。 |
+| その他                                                                              | 例外により catch されたエラーです。              |
 
 # 関連項目
 
