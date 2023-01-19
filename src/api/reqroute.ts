@@ -53,6 +53,9 @@ async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
     await conn.commit();
   } catch (err) {
     await conn.rollback();
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log();
   } finally {
     conn.release();

@@ -48,9 +48,7 @@ async function isAcceptable(userId: string): Promise<ApiResult> {
                 } else if (
                   carStatus !== undefined &&
                   "status" in carStatus &&
-                  (carStatus["status"] === 5 ||
-                    carStatus["status"] === 6 ||
-                    carStatus["status"] === 7)
+                  (carStatus["status"] === 5 || carStatus["status"] === 6)
                 ) {
                   // There is something wrong with your car.
                   result.reason =
@@ -83,6 +81,9 @@ async function isAcceptable(userId: string): Promise<ApiResult> {
     await conn.commit();
   } catch (err) {
     await conn.rollback();
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
     conn.release();

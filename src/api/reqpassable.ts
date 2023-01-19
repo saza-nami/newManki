@@ -32,34 +32,29 @@ async function reqPassable(userId: string): Promise<IsPassable> {
       // FOR DEBUG
       if (passPoints !== undefined) {
         // 取得した通行可能領域分ループ
-        if (passPoints.length === 0) {
-          result.succeeded = true;
-          result.passableInfo = [];
-        } else {
-          for (const elem of passPoints) {
-            if (
-              "passableId" in elem &&
-              elem["passableId"] !== undefined &&
-              "radius" in elem &&
-              elem["radius"] !== undefined &&
-              "lat" in elem &&
-              elem["lat"] !== undefined &&
-              "lng" in elem &&
-              elem["lng"] !== undefined
-            ) {
-              resData.push({
-                passableId: Number(elem["passableId"]),
-                position: {
-                  lat: Number(elem["lat"]),
-                  lng: Number(elem["lng"]),
-                },
-                radius: Number(elem["radius"]),
-              });
-              result.succeeded = true;
-              result.passableInfo = resData;
-            }
+        for (const elem of passPoints) {
+          if (
+            "passableId" in elem &&
+            elem["passableId"] !== undefined &&
+            "radius" in elem &&
+            elem["radius"] !== undefined &&
+            "lat" in elem &&
+            elem["lat"] !== undefined &&
+            "lng" in elem &&
+            elem["lng"] !== undefined
+          ) {
+            resData.push({
+              passableId: Number(elem["passableId"]),
+              position: {
+                lat: Number(elem["lat"]),
+                lng: Number(elem["lng"]),
+              },
+              radius: Number(elem["radius"]),
+            });
           }
         }
+        result.succeeded = true;
+        result.passableInfo = resData;
       }
     } else {
       result.reason = "Illegal user.";
@@ -67,6 +62,9 @@ async function reqPassable(userId: string): Promise<IsPassable> {
     await conn.commit();
   } catch (err) {
     await conn.rollback();
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
     conn.release();
