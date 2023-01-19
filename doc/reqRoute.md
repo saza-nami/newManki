@@ -57,6 +57,7 @@ Content-Type: application/json; charset=utf-8
 | `Illegal user.`                     | リクエストされたユーザが無効です。                                   |
 | `This route is not executable.`     | リクエストされた経路は実行できません。(通行可能領域外の点があるため) |
 | `There is no route with that name.` | そのような名前の経路は存在しません。                                 |
+| その他                              | 例外により catch されたエラーです。                                  |
 
 # 関連項目
 

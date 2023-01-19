@@ -2,8 +2,9 @@
 title: intro
 subtitle: Manki API Reference Manual
 author:
-- [KusaReMKN]
+  - [KusaReMKN]
 ---
+
 # 名称
 
 **`intro`** -- Manki API の概要
@@ -48,9 +49,9 @@ Manki API Reference Manual では次の用語を定義しています。
 
 ```ts
 interface Position {
-  lat: number,	// 緯度（°; 北緯を正）
-  lng: number,	// 経度（°; 東経を正）
-};
+  lat: number; // 緯度（°; 北緯を正）
+  lng: number; // 経度（°; 東経を正）
+}
 ```
 
 （ユーザに）車が割り当てられている
@@ -68,10 +69,10 @@ NinJa が Manki の管理下にあることを（車が）正常状態にある�
 
 ```ts
 interface PassableInfo {
-  position: Position,	// 地点
-  radius: number,		// 半径（メートル）
-  passableId: number,	// 識別子
-};
+  position: Position; // 地点
+  radius: number; // 半径（メートル）
+  passableId: number; // 識別子
+}
 ```
 
 経路名情報
@@ -80,10 +81,14 @@ interface PassableInfo {
 
 ```ts
 interface PassableName {
-  routeName: string,	// 経路の名前
-  available: boolean,	// 利用可能なら真
-};
+  routeName: string; // 経路の名前
+  available: boolean; // 利用可能なら真
+}
 ```
+
+# ステータスコード 500 について
+
+API が ステータスコード 500 を返す場合はサーバに何らかのエラーが発生した場合に返ります。またエラー内容は各 API の診断のその他に該当します。
 
 # 関連項目
 
@@ -96,11 +101,11 @@ interface PassableName {
 
 Manki API の大部分は [saza-nami][saza-nami] によって書かれました。
 この文書は [saza-nami][saza-nami] によって書かれたものを元に
-[KusaReMKN][KusaReMKN] によって書かれました。
+[KusaReMKN][kusaremkn] によって書かれました。
 
 # バグ
 
 予告なく変更が加えられる場合があります。
 
 [saza-nami]: https://github.com/saza-nami
-[KusaReMKN]: https://github.com/KusaReMKN
+[kusaremkn]: https://github.com/KusaReMKN
