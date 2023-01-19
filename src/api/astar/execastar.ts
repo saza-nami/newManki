@@ -26,6 +26,9 @@ async function createRoute(
     await conn.commit();
   } catch (err) {
     await conn.rollback();
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
     conn.release();

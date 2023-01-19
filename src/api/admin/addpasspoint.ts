@@ -37,7 +37,6 @@ async function addPassables(
     await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
-    result.reason = err;
     if (err instanceof Error) {
       result.reason = err.message;
     }

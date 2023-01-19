@@ -20,7 +20,6 @@ async function terminateAdmin(adminId: string): Promise<ApiResult> {
     await conn.commit();
   } catch (err) {
     await conn.rollback();
-    result.reason = err;
     if (err instanceof Error) {
       result.reason = err.message;
     }

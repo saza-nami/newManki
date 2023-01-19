@@ -33,30 +33,25 @@ async function reqPassable(adminId: string): Promise<IsPassable> {
       const resData: PassableInfo[] = [];
       if (passPoints !== undefined) {
         // 取得した通行可能領域分ループ
-        if (passPoints.length === 0) {
-          result.succeeded = true;
-          result.passableInfo = [];
-        } else {
-          for (const elem of passPoints) {
-            if (
-              "passableId" in elem &&
-              "radius" in elem &&
-              "lat" in elem &&
-              "lng" in elem
-            ) {
-              resData.push({
-                passableId: Number(elem["passableId"]),
-                position: {
-                  lat: Number(elem["lat"]),
-                  lng: Number(elem["lng"]),
-                },
-                radius: Number(elem["radius"]),
-              });
-              result.succeeded = true;
-              result.passableInfo = resData;
-            }
+        for (const elem of passPoints) {
+          if (
+            "passableId" in elem &&
+            "radius" in elem &&
+            "lat" in elem &&
+            "lng" in elem
+          ) {
+            resData.push({
+              passableId: Number(elem["passableId"]),
+              position: {
+                lat: Number(elem["lat"]),
+                lng: Number(elem["lng"]),
+              },
+              radius: Number(elem["radius"]),
+            });
           }
         }
+        result.succeeded = true;
+        result.passableInfo = resData;
       }
     } else {
       result.reason = "Illegal admin.";
@@ -65,7 +60,6 @@ async function reqPassable(adminId: string): Promise<IsPassable> {
     await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
-    result.reason = err;
     if (err instanceof Error) {
       result.reason = err.message;
     }
