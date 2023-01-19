@@ -270,7 +270,21 @@ async function progressTran(
       // 車が経路の始点に向かっている時
       if (!param.arrange) {
         // 車が経路の始点についたら
-        if (param.pPoint + 1 === param.carToRoute.length) {
+        if (
+          param.carToRoute.length === 2 &&
+          param.pPoint + 1 === param.carToRoute.length
+        ) {
+          await db.executeTran(connected, arrangeOrder, [
+            param.route[0][0],
+            orderId,
+          ]);
+          await db.executeTran(connected, arrangeCar, [carId]);
+          nextPosition = null;
+        }
+        if (
+          param.carToRoute.length > 2 &&
+          param.pPoint + 1 === param.carToRoute.length - 1
+        ) {
           await db.executeTran(connected, arrangeOrder, [
             param.route[0][0],
             orderId,
@@ -303,6 +317,26 @@ async function progressTran(
         // 目的地についたら
         if (
           param.pRoute === param.route.length &&
+          param.route[param.pRoute - 1].length === 2 &&
+          param.pPoint + 1 === param.route[param.pRoute - 1].length
+        ) {
+          // 巡回する場合
+          if (param.junkai) {
+            await db.executeTran(connected, junkaiOrder, [
+              param.route[0][1],
+              orderId,
+            ]);
+            nextPosition = null;
+          }
+          // 巡回しない場合
+          else {
+            await db.executeTran(connected, finishOrder, [orderId]);
+            await db.executeTran(connected, finishCar, [carId]);
+            nextPosition = null;
+          }
+        } else if (
+          param.pRoute === param.route.length &&
+          param.route[param.pRoute - 1].length > 2 &&
           param.pPoint + 1 === param.route[param.pRoute - 1].length - 1
         ) {
           // 巡回する場合
@@ -321,7 +355,20 @@ async function progressTran(
           }
         }
         // 停留所についたら
-        else if (param.pPoint - 1 === param.route[param.pRoute - 1].length) {
+        else if (
+          param.route[param.pRoute - 1].length === 2 &&
+          param.pPoint + 1 === param.route[param.pRoute - 1].length
+        ) {
+          await db.executeTran(connected, arrivalOrder, [
+            param.route[param.pRoute][1],
+            orderId,
+          ]);
+          await db.executeTran(connected, arrivalCar, [carId]);
+          nextPosition = null;
+        } else if (
+          param.route[param.pRoute - 1].length > 2 &&
+          param.pPoint + 1 === param.route[param.pRoute - 1].length - 1
+        ) {
           await db.executeTran(connected, arrivalOrder, [
             param.route[param.pRoute][1],
             orderId,
