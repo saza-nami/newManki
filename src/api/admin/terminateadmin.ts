@@ -16,6 +16,8 @@ async function terminateAdmin(adminId: string): Promise<ApiResult> {
     if ((await admin.existAdminTran(conn, adminId)) === true) {
       await db.executeTran(conn, endAdmin, [adminId]);
       result.succeeded = true;
+    } else {
+      result.reason = "Illegal admin.";
     }
     await conn.commit();
   } catch (err) {
