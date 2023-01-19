@@ -5,22 +5,25 @@ import * as admin from "api/admin/admin";
 import * as db from "database";
 import report from "api/_report";
 
+const endAdmin =
+  "UPDATE adminTable SET endAt = NOW() WHERE adminId = UUID_TO_BIN(?, 1)";
+
 async function terminateAdmin(adminId: string): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
-  // check input
-  if (typeof adminId === "undefined") {
-    return report(result);
-  }
   const conn = await db.createNewConn();
-
   try {
     await conn.beginTransaction();
     if ((await admin.existAdminTran(conn, adminId)) === true) {
-      result.succeeded = await admin.executeTerminateAdminTran(conn, adminId);
+      await db.executeTran(conn, endAdmin, [adminId]);
+      result.succeeded = true;
     }
     await conn.commit();
   } catch (err) {
     await conn.rollback();
+    result.reason = err;
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
     conn.release();
@@ -30,7 +33,11 @@ async function terminateAdmin(adminId: string): Promise<ApiResult> {
 
 export default express.Router().post("/terminateAdmin", async (req, res) => {
   try {
-    res.json(await terminateAdmin(req.body.adminId));
+    if (typeof req.body.adminId === "undefined") {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    } else {
+      res.json(await terminateAdmin(req.body.adminId));
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }

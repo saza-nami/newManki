@@ -16,21 +16,13 @@ async function addPassables(
   passPoints: PassablePoint[]
 ): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
-  // check input
-  if (typeof adminId === "undefined" && typeof passPoints === "undefined") {
-    return report(result);
-  }
-
   const add = passPoints;
-  console.log(adminId);
-  console.log(add);
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
     await conn.query(lockPWAR);
     if ((await admin.existAdminTran(conn, adminId)) === true) {
       for (const i in add) {
-        console.log(add[i].position.lat);
         await db.executeTran(conn, addPassable, [
           add[i].radius,
           add[i].position.lat,
@@ -38,11 +30,17 @@ async function addPassables(
         ]);
       }
       result.succeeded = true;
+    } else {
+      result.reason = "Illegal admin.";
     }
     await conn.commit();
     await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
+    result.reason = err;
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
     conn.release();
@@ -52,7 +50,14 @@ async function addPassables(
 
 export default express.Router().post("/addPassable", async (req, res) => {
   try {
-    res.json(await addPassables(req.body.adminId, req.body.passPoints));
+    if (
+      typeof req.body.adminId === "undefined" ||
+      typeof req.body.passPoints === "undefined"
+    ) {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    } else {
+      res.json(await addPassables(req.body.adminId, req.body.passPoints));
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }
