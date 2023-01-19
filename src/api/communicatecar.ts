@@ -14,7 +14,7 @@ interface ReplyInfo extends ApiResult {
 
 let lastLog: Access = { date: [0], ipAddress: ["anyonyomarubobo"] };
 let carStatus: number = 1;
-const lockCW = "LOCK TABLES carTable WRITE";
+const lockCW = "LOCK TABLES orderTable WRITE, carTable WRITE, userTable READ";
 const unlock = "UNLOCK TABLES";
 const addCar =
   "INSERT INTO carTable (sequence, nowPoint, battery) \
@@ -50,9 +50,9 @@ async function createReply(
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
+    await conn.query(lockCW);
     if (request === "hello") {
       if (location !== undefined && battery !== undefined) {
-        await conn.query(lockCW);
         await db.executeTran(conn, addCar, [rndSeq, location, battery]);
         const carInfo = db.extractElem(
           await db.executeTran(conn, reqLastCarId)
@@ -183,7 +183,7 @@ async function progressTran(
   // carId から車を進ませるのに必要な情報を取得
   const getOrderId =
     "SELECT orderId FROM userTable \
-    WHERE carId = UUID_TO_BIN(?, 1) AND endAt IS NULL FOR UPDATE";
+    WHERE carId = UUID_TO_BIN(?, 1) AND endAt IS NULL LOCK IN SHARE MODE";
   const getParams =
     "SELECT nextPoint, arrival, finish, arrange, carToRoute, route, \
     junkai, pRoute, pPoint FROM orderTable WHERE orderId = ? \
@@ -270,12 +270,13 @@ async function progressTran(
       // 車が経路の始点に向かっている時
       if (!param.arrange) {
         // 車が経路の始点についたら
-        if (param.pPoint + 1 === param.carToRoute.length - 1) {
+        if (param.pPoint + 1 === param.carToRoute.length) {
           await db.executeTran(connected, arrangeOrder, [
-            param.route[0][1],
+            param.route[0][0],
             orderId,
           ]);
           await db.executeTran(connected, arrangeCar, [carId]);
+          nextPosition = null;
         }
         // 車が経路の始点まで移動中なら
         else {
@@ -287,21 +288,18 @@ async function progressTran(
               param.carToRoute[1],
               orderId,
             ]);
-            return param.carToRoute[1];
+            nextPosition = param.carToRoute[1];
           } else {
             await db.executeTran(connected, notArrOrder, [
               param.carToRoute[param.pPoint + 2],
               orderId,
             ]);
+            nextPosition = param.carToRoute[param.pPoint + 2];
           }
         }
       }
       // 車が経路の始点についた後
       else {
-        console.log(param.pRoute);
-        console.log(param.route.length);
-        console.log(param.pPoint + 1);
-        console.log(param.route[param.pRoute - 1].length - 1);
         // 目的地についたら
         if (
           param.pRoute === param.route.length &&
@@ -313,34 +311,44 @@ async function progressTran(
               param.route[0][1],
               orderId,
             ]);
+            nextPosition = null;
           }
           // 巡回しない場合
           else {
             await db.executeTran(connected, finishOrder, [orderId]);
             await db.executeTran(connected, finishCar, [carId]);
+            nextPosition = null;
           }
         }
         // 停留所についたら
-        else if (
-          param.pPoint - 1 ===
-          param.route[param.pRoute - 1].length - 1
-        ) {
+        else if (param.pPoint - 1 === param.route[param.pRoute - 1].length) {
           await db.executeTran(connected, arrivalOrder, [
             param.route[param.pRoute][1],
             orderId,
           ]);
           await db.executeTran(connected, arrivalCar, [carId]);
+          nextPosition = null;
         }
         // 経路間移動中なら
         else {
-          console.log("hoge");
-          await db.executeTran(connected, moving, [
-            param.route[param.pRoute - 1][param.pPoint + 2],
-            orderId,
-          ]);
+          if (
+            param.nextPoint.lat === param.route[param.pRoute - 1][0].lat &&
+            param.nextPoint.lng === param.route[param.pRoute - 1][0].lng
+          ) {
+            await db.executeTran(connected, initArr, [
+              param.route[param.pRoute - 1][1],
+              orderId,
+            ]);
+            nextPosition = param.route[param.pRoute - 1][1];
+          } else {
+            await db.executeTran(connected, moving, [
+              param.route[param.pRoute - 1][param.pPoint + 2],
+              orderId,
+            ]);
+            nextPosition = param.route[param.pRoute - 1][param.pPoint + 2];
+          }
         }
       }
-      nextPosition = param.nextPoint;
     }
   }
   return nextPosition;

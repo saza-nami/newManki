@@ -35,36 +35,31 @@ async function reqCarInfo(adminId: string): Promise<ManageCars> {
         await db.executeTran(conn, reqCarinfoSql)
       );
       if (carInfo !== undefined) {
-        if (carInfo.length === 0) {
-          result.succeeded = true;
-          result.carInformations = [];
-        } else {
-          for (const elem of carInfo) {
-            if (
-              elem !== undefined &&
-              "BIN_TO_UUID(carId, 1)" in elem &&
-              "status" in elem &&
-              "nowPoint" in elem &&
-              "battery" in elem &&
-              "lastAt" in elem &&
-              elem["BIN_TO_UUID(carId, 1)"] !== undefined &&
-              elem["status"] !== undefined &&
-              elem["nowPoint"] !== undefined &&
-              elem["battery"] !== undefined &&
-              elem["lastAt"] !== undefined
-            ) {
-              carInformations.push({
-                carId: elem["BIN_TO_UUID(carId, 1)"],
-                status: elem["status"],
-                nowPoint: elem["nowPoint"],
-                battery: elem["battery"],
-                lastAt: elem["lastAt"].toUTCString(),
-              });
-            }
+        for (const elem of carInfo) {
+          if (
+            elem !== undefined &&
+            "BIN_TO_UUID(carId, 1)" in elem &&
+            "status" in elem &&
+            "nowPoint" in elem &&
+            "battery" in elem &&
+            "lastAt" in elem &&
+            elem["BIN_TO_UUID(carId, 1)"] !== undefined &&
+            elem["status"] !== undefined &&
+            elem["nowPoint"] !== undefined &&
+            elem["battery"] !== undefined &&
+            elem["lastAt"] !== undefined
+          ) {
+            carInformations.push({
+              carId: elem["BIN_TO_UUID(carId, 1)"],
+              status: elem["status"],
+              nowPoint: elem["nowPoint"],
+              battery: elem["battery"],
+              lastAt: elem["lastAt"].toUTCString(),
+            });
           }
-          result.succeeded = true;
-          result.carInformations = carInformations;
         }
+        result.succeeded = true;
+        result.carInformations = carInformations;
       }
     } else {
       result.reason = "Illegal admin.";
