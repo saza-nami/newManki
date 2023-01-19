@@ -5,6 +5,7 @@ import * as admin from "api/admin/admin";
 import * as db from "database";
 import * as global from "api/scripts/global";
 import report from "api/_report";
+import e from "express";
 
 const lockCWAR = "LOCK TABLES carTable WRITE, adminTable READ";
 const unlock = "UNLOCK TABLES";
@@ -20,6 +21,9 @@ async function manageCar(adminId: string, carId: string): Promise<ApiResult> {
     if ((await admin.existAdminTran(conn, adminId)) === true) {
       if (await global.existCarTran(conn, carId)) {
         await db.executeTran(conn, checkStatus, carId);
+        result.succeeded = true;
+      } else {
+        result.reason = "No such car exists.";
       }
     } else {
       result.reason = "Illegal admin.";
