@@ -16,16 +16,15 @@ interface PassableInfo extends PassablePoint {
 
 const reqPassableSql =
   "SELECT passableId, radius, lat, lng FROM passableTable LOCK IN SHARE MODE";
+const lockPWAR = "LOCK TABLES passableTable WRITE, adminTable READ";
+const unlock = "UNLOCK TABLES";
 
 async function reqPassable(adminId: string): Promise<IsPassable> {
   const result: IsPassable = { succeeded: false };
-  if (typeof adminId === "undefined") {
-    return report(result);
-  }
-
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
+    await conn.query(lockPWAR);
     if ((await admin.existAdminTran(conn, adminId)) === true) {
       // 通行可能領域を取得
       const passPoints = db.extractElems(
@@ -63,8 +62,13 @@ async function reqPassable(adminId: string): Promise<IsPassable> {
       result.reason = "Illegal admin.";
     }
     await conn.commit();
+    await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
+    result.reason = err;
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
     conn.release();
@@ -74,7 +78,11 @@ async function reqPassable(adminId: string): Promise<IsPassable> {
 
 export default express.Router().post("/reqPassAdmin", async (req, res) => {
   try {
-    res.json(await reqPassable(req.body.adminId));
+    if (typeof req.body.adminId === "undefined") {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    } else {
+      res.json(await reqPassable(req.body.adminId));
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }
