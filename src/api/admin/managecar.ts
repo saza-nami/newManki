@@ -5,7 +5,6 @@ import * as admin from "api/admin/admin";
 import * as db from "database";
 import * as global from "api/scripts/global";
 import report from "api/_report";
-import e from "express";
 
 const lockCWAR = "LOCK TABLES carTable WRITE, adminTable READ";
 const unlock = "UNLOCK TABLES";

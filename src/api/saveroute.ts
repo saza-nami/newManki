@@ -6,7 +6,6 @@ import * as db from "database";
 import * as global from "api/scripts/global";
 import * as map from "api/scripts/map";
 import report from "api/_report";
-import { buffer, json } from "stream/consumers";
 
 interface SaveRoute extends ApiResult {
   routeName?: string;
@@ -45,7 +44,7 @@ async function saveRoute(
       if (existName !== undefined) {
         if ("COUNT(*)" in existName && existName["COUNT(*)"] !== undefined) {
           if (existName["COUNT(*)"] > 0) {
-            result.reason = "Duplicate name.";
+            result.reason = "Duplicate routeName.";
           } else {
             // 経路チェック
             const checkResult = map.checkRoute(route, passPoints);
@@ -76,7 +75,6 @@ async function saveRoute(
     await conn.commit();
   } catch (err) {
     await conn.rollback();
-    result.reason = err;
     if (err instanceof Error) {
       result.reason = err.message;
     }

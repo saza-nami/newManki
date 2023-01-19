@@ -78,9 +78,7 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
             result.arrange = orderStatus["arrange"] ? true : false;
             result.junkai = orderStatus["junkai"] ? true : false;
             result.status =
-              carStatus["status"] == 5 ||
-              carStatus["status"] == 6 ||
-              carStatus["status"] == 7
+              carStatus["status"] == 5 || carStatus["status"] == 6
                 ? false
                 : true;
             result.nowPoint = carStatus["nowPoint"];
@@ -121,7 +119,6 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
     await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
-    result.reason = err;
     if (err instanceof Error) {
       result.reason = err.message;
     }

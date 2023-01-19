@@ -59,7 +59,9 @@ async function createUser(): Promise<CreateUserResult> {
     await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
-    result.reason = err as string;
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
     conn.release();

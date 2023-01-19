@@ -99,7 +99,7 @@ export async function executeEnd(
     finish = TRUE, endAt = NOW() WHERE orderId = ? AND endAt IS NULL";
   const updateCarSql =
     "UPDATE carTable SET status = 2 \
-    WHERE carId = ? AND (status != 5 OR status != 6 OR status != 7)";
+    WHERE carId = ? AND (status != 5 OR status != 6)";
   const userTable = db.extractElem(
     await db.executeTran(conn, getIdSql, [userId])
   );
@@ -131,7 +131,7 @@ export async function executeTerminate(
     WHERE userId = UUID_TO_BIN(?, 1) AND endAt IS NULL";
   const updateCarSql =
     "UPDATE carTable SET status = 1 \
-    WHERE carId = ? AND (status != 5 OR status != 6 OR status != 7)";
+    WHERE carId = ? AND (status != 5 OR status != 6)";
   const userTable = db.extractElem(
     await db.executeTran(conn, getCarIdSql, [userId])
   );

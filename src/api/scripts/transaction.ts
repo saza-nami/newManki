@@ -128,7 +128,7 @@ export async function unallocateCarTran() {
                     order.orderId,
                   ]);
                   await db.executeTran(conn2, updOrderInfo, [
-                    carToRoute[1],
+                    carToRoute[0],
                     carToRoute,
                     order.orderId,
                   ]);
@@ -201,7 +201,6 @@ export async function allocatedCarTran() {
     await conn1.query(lockURPRORCR);
     passPoints = await map.getPassPos(conn1);
     const lists = db.extractElems(await db.executeTran(conn1, getLists));
-    console.log(lists);
     if (lists !== undefined) {
       if (lists.length > 0) {
         for (const list of lists) {
@@ -219,8 +218,6 @@ export async function allocatedCarTran() {
                 list["BIN_TO_UUID(carId, 1)"],
               ])
             );
-            console.log(order);
-            console.log(car);
             if (
               order !== undefined &&
               "endAt" in order &&
@@ -285,11 +282,13 @@ export async function allocatedCarTran() {
             latest["status"] === 2
           ) {
             if (map.approx(allocate.car.nowPoint, latest["nowPoint"])) {
-              await db.executeTran(conn2, updOrderInfo, [
-                carToRoute[1],
-                carToRoute,
-                allocate.order.orderId,
-              ]);
+              console.log(
+                await db.executeTran(conn2, updOrderInfo, [
+                  carToRoute[0],
+                  carToRoute,
+                  allocate.order.orderId,
+                ])
+              );
               console.log("reallocate");
               await db.executeTran(conn2, updCarStatus, [allocate.car.carId]);
             }
@@ -378,7 +377,7 @@ export async function allocatedCarTran() {
                     allocate.order.orderId,
                   ]);
                   await db.executeTran(conn4, updOrderInfo, [
-                    carToRoute[1],
+                    carToRoute[0],
                     carToRoute,
                     allocate.order.orderId,
                   ]);
@@ -415,11 +414,11 @@ export async function intervalCarTran() {
   const intervaladd =
     "UPDATE carTable SET intervalCount = intervalCount + 1 \
     WHERE lastAt <= SUBTIME(NOW(), '00:00:10') \
-    AND (status != 5 OR status != 6 OR status != 7)  AND intevalCount < 3";
+    AND (status != 5 OR status != 6)  AND intevalCount < 3";
   const intervalReset =
     "UPDATE carTable SET intervalCount = 0 \
     WHERE lastAt >= SUBTIME(NOW(), '00:00:10') \
-    AND (status != 5 OR status != 6 OR status != 7) AND intevalCount < 3";
+    AND (status != 5 OR status != 6) AND intevalCount < 3";
   const errorCarsSql =
     "SELECT carId FROM carTable WHERE intevalCount = 3 FOR UPDATE";
   const stopCarSql = "UPDATE carTable SET status = 5 WHERE carId = ?";
@@ -476,7 +475,7 @@ export async function intervalUserTran() {
     finish = TRUE, endAt = NOW() WHERE orderId = ?";
   const freeCarSql =
     "UPDATE carTable SET status = 1 \
-    WHERE carId = ? AND (status != 5 OR status != 6 OR status != 7)";
+    WHERE carId = ? AND (status != 5 OR status != 6)";
   const conn = await db.createNewConn();
 
   try {

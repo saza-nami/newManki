@@ -96,6 +96,9 @@ async function reserveRoute(
     await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
     conn.release();
