@@ -88,11 +88,7 @@ async function createReply(
           ) {
             if (request === "next") {
               result.succeeded = true;
-              if (
-                carInfo["status"] === 5 ||
-                carInfo["status"] === 6 ||
-                carInfo["status"] === 7
-              ) {
+              if (carInfo["status"] === 5 || carInfo["status"] === 6) {
                 result.response = "halt";
               } else {
                 console.log(
@@ -113,13 +109,8 @@ async function createReply(
                 }
                 if (carInfo["status"] === 3) {
                   result.response = "next";
-                  const nextPoint = await progressTran(
-                    conn,
-                    carId,
-                    carInfo["status"]
-                  );
-                  console.log(nextPoint);
-                  if (nextPoint !== undefined) {
+                  const nextPoint = await progressTran(conn, carId);
+                  if (nextPoint !== null) {
                     result.destination = nextPoint;
                   } else {
                     result.response = "stop";
@@ -128,11 +119,7 @@ async function createReply(
               }
             } else if (request === "ping") {
               result.succeeded = true;
-              if (
-                carInfo["status"] === 5 ||
-                carInfo["status"] === 6 ||
-                carInfo["status"] === 7
-              ) {
+              if (carInfo["status"] === 5 || carInfo["status"] === 6) {
                 result.response = "halt";
               } else {
                 await db.executeTran(conn, updCarInfo, [
@@ -170,7 +157,6 @@ async function createReply(
           }
         } else {
           result.reason = "auth error.";
-          console.log("auth error");
         }
       }
     }
@@ -178,7 +164,6 @@ async function createReply(
     await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
-    result.reason = err;
     if (err instanceof Error) {
       result.reason = err.message;
     }
@@ -192,46 +177,46 @@ async function createReply(
 // Advance car
 async function progressTran(
   connected: mysql.PoolConnection,
-  carId: string,
-  status: number
-): Promise<Position | undefined> {
-  let nextPosition: Position | undefined = undefined;
+  carId: string
+): Promise<Position | null> {
+  let nextPosition: Position | null = null;
   // carId から車を進ませるのに必要な情報を取得
-  const getOrderIdSql =
+  const getOrderId =
     "SELECT orderId FROM userTable \
     WHERE carId = UUID_TO_BIN(?, 1) AND endAt IS NULL FOR UPDATE";
-  const getParamsSql =
+  const getParams =
     "SELECT nextPoint, arrival, finish, arrange, carToRoute, route, \
     junkai, pRoute, pPoint FROM orderTable WHERE orderId = ? \
     FOR UPDATE";
-  const arrangeOrderSql =
+  const arrangeOrder =
     "UPDATE orderTable SET arrival = TRUE, arrange = TRUE, \
     pRoute = 1, pPoint = 0, nextPoint = ? WHERE orderId = ?";
-  const arrangeCarSql =
+  const arrangeCar =
     "UPDATE carTable SET status = 4 WHERE carId = UUID_TO_BIN(?, 1)";
-  const notArrOrderSql =
+  const initArr = "UPDATE orderTable SET nextPoint = ? WHERE orderId = ?";
+  const notArrOrder =
     "UPDATE orderTable SET nextPoint = ?, \
     pPoint = pPoint + 1 WHERE orderId = ?";
-  const junkaiOrderSql =
+  const junkaiOrder =
     "UPDATE orderTable SET nextPoint = ?, arrival = TRUE, \
     pRoute = 1, pPoint = 0 WHERE orderId = ?";
-  const finishOrderSql =
-    "UPDATE orderTable SET nextPoint = NULL, arrival = TRUE, \
+  const finishOrder =
+    "UPDATE orderTable SET nextPoint = null, arrival = TRUE, \
     finish = TRUE, endAt = NOW() WHERE orderId = ?";
-  const finishCarSql =
+  const finishCar =
     "UPDATE carTable SET status = 2 WHERE carId = UUID_TO_BIN(?, 1)";
-  const arrivalOrderSql =
+  const arrivalOrder =
     "UPDATE orderTable SET nextPoint = ?, arrival = TRUE, \
     pRoute = pRoute + 1, pPoint = 0 WHERE orderId = ?";
-  const arrivalCarSql =
+  const arrivalCar =
     "UPDATE carTable SET status = 4 \
     WHERE carId = UUID_TO_BIN(?, 1)";
-  const movingSql =
+  const moving =
     "UPDATE orderTable SET nextPoint = ?, pPoint = pPoint + 1 \
     WHERE orderId = ?";
 
   const userTable = db.extractElem(
-    await db.executeTran(connected, getOrderIdSql, [carId])
+    await db.executeTran(connected, getOrderId, [carId])
   );
   let orderId: number = 0;
   if (
@@ -245,7 +230,7 @@ async function progressTran(
   }
 
   const orderTable = db.extractElem(
-    await db.executeTran(connected, getParamsSql, [orderId])
+    await db.executeTran(connected, getParams, [orderId])
   );
   let param: Proceed;
   if (
@@ -280,59 +265,76 @@ async function progressTran(
       pRoute: orderTable["pRoute"],
       pPoint: orderTable["pPoint"],
     };
-    console.log(param);
     // 車が走行中で停留所に目的地にもいない場合
-    if (status === 3 && !param.arrival && !param.finish) {
+    if (!param.arrival && !param.finish) {
       // 車が経路の始点に向かっている時
       if (!param.arrange) {
         // 車が経路の始点についたら
-        if (param.carToRoute.length - 1 === param.pPoint) {
-          await db.executeTran(connected, arrangeOrderSql, [
+        if (param.pPoint + 1 === param.carToRoute.length - 1) {
+          await db.executeTran(connected, arrangeOrder, [
             param.route[0][1],
             orderId,
           ]);
-          await db.executeTran(connected, arrangeCarSql, [carId]);
+          await db.executeTran(connected, arrangeCar, [carId]);
         }
         // 車が経路の始点まで移動中なら
-        else if (param.carToRoute.length - 1 > param.pPoint) {
-          console.log("go to arrange position");
-          await db.executeTran(connected, notArrOrderSql, [
-            param.carToRoute[param.pPoint + 1],
-            orderId,
-          ]);
+        else {
+          if (
+            param.nextPoint.lat === param.carToRoute[0].lat &&
+            param.nextPoint.lng === param.carToRoute[0].lng
+          ) {
+            await db.executeTran(connected, initArr, [
+              param.carToRoute[1],
+              orderId,
+            ]);
+            return param.carToRoute[1];
+          } else {
+            await db.executeTran(connected, notArrOrder, [
+              param.carToRoute[param.pPoint + 2],
+              orderId,
+            ]);
+          }
         }
       }
       // 車が経路の始点についた後
       else {
+        console.log(param.pRoute);
+        console.log(param.route.length);
+        console.log(param.pPoint + 1);
+        console.log(param.route[param.pRoute - 1].length - 1);
         // 目的地についたら
         if (
-          param.route.length === param.pRoute &&
-          param.route[param.pRoute - 1].length - 1 === param.pPoint
+          param.pRoute === param.route.length &&
+          param.pPoint + 1 === param.route[param.pRoute - 1].length - 1
         ) {
           // 巡回する場合
           if (param.junkai) {
-            await db.executeTran(connected, junkaiOrderSql, [
+            await db.executeTran(connected, junkaiOrder, [
               param.route[0][1],
               orderId,
             ]);
           }
           // 巡回しない場合
           else {
-            await db.executeTran(connected, finishOrderSql, [orderId]);
-            await db.executeTran(connected, finishCarSql, [carId]);
+            await db.executeTran(connected, finishOrder, [orderId]);
+            await db.executeTran(connected, finishCar, [carId]);
           }
         }
         // 停留所についたら
-        else if (param.route[param.pRoute - 1].length - 1 === param.pPoint) {
-          await db.executeTran(connected, arrivalOrderSql, [
-            param.route[param.pRoute][0],
+        else if (
+          param.pPoint - 1 ===
+          param.route[param.pRoute - 1].length - 1
+        ) {
+          await db.executeTran(connected, arrivalOrder, [
+            param.route[param.pRoute][1],
             orderId,
           ]);
-          await db.executeTran(connected, arrivalCarSql, [carId]);
+          await db.executeTran(connected, arrivalCar, [carId]);
         }
         // 経路間移動中なら
         else {
-          await db.executeTran(connected, movingSql, [
+          console.log("hoge");
+          await db.executeTran(connected, moving, [
             param.route[param.pRoute - 1][param.pPoint + 2],
             orderId,
           ]);
