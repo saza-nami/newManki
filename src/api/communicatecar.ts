@@ -272,7 +272,7 @@ async function progressTran(
         // 車が経路の始点についたら
         if (
           param.carToRoute.length === 2 &&
-          param.pPoint + 1 === param.carToRoute.length
+          param.pPoint + 1 === param.carToRoute.length - 1
         ) {
           await db.executeTran(connected, arrangeOrder, [
             param.route[0][0],
@@ -283,7 +283,7 @@ async function progressTran(
         }
         if (
           param.carToRoute.length > 2 &&
-          param.pPoint + 1 === param.carToRoute.length - 1
+          param.pPoint + 1 === param.carToRoute.length
         ) {
           await db.executeTran(connected, arrangeOrder, [
             param.route[0][0],
@@ -318,7 +318,7 @@ async function progressTran(
         if (
           param.pRoute === param.route.length &&
           param.route[param.pRoute - 1].length === 2 &&
-          param.pPoint + 1 === param.route[param.pRoute - 1].length
+          param.pPoint + 1 === param.route[param.pRoute - 1].length - 1
         ) {
           // 巡回する場合
           if (param.junkai) {
@@ -337,7 +337,7 @@ async function progressTran(
         } else if (
           param.pRoute === param.route.length &&
           param.route[param.pRoute - 1].length > 2 &&
-          param.pPoint + 1 === param.route[param.pRoute - 1].length - 1
+          param.pPoint + 1 === param.route[param.pRoute - 1].length
         ) {
           // 巡回する場合
           if (param.junkai) {
@@ -357,7 +357,7 @@ async function progressTran(
         // 停留所についたら
         else if (
           param.route[param.pRoute - 1].length === 2 &&
-          param.pPoint + 1 === param.route[param.pRoute - 1].length
+          param.pPoint + 1 === param.route[param.pRoute - 1].length - 1
         ) {
           await db.executeTran(connected, arrivalOrder, [
             param.route[param.pRoute][1],
@@ -367,7 +367,7 @@ async function progressTran(
           nextPosition = null;
         } else if (
           param.route[param.pRoute - 1].length > 2 &&
-          param.pPoint + 1 === param.route[param.pRoute - 1].length - 1
+          param.pPoint + 1 === param.route[param.pRoute - 1].length
         ) {
           await db.executeTran(connected, arrivalOrder, [
             param.route[param.pRoute][1],
