@@ -6,37 +6,38 @@ import * as admin from "api/admin/admin";
 import * as db from "database";
 import report from "api/_report";
 
-const lockTablesSql = "LOCK TABLES passableTable WRITE, adminTable READ";
-const unlockTableSql = "UNLOCK TABLES";
-const delPassableSql = "DELETE FROM passableTable WHERE passableId = ?";
+const lockPWAR = "LOCK TABLES passableTable WRITE, adminTable READ";
+const unlock = "UNLOCK TABLES";
+const delPassable = "DELETE FROM passableTable WHERE passableId = ?";
 
-async function delPassable(
+async function delPassables(
   adminId: string,
   passId: number[]
 ): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
-  // check input
-  if (typeof adminId === "undefined" && typeof passId === "undefined") {
-    return report(result);
-  }
-
   const del = passId;
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
-    await conn.query(lockTablesSql);
+    await conn.query(lockPWAR);
     if ((await admin.existAdminTran(conn, adminId)) === true) {
       for (const i in del) {
-        await db.executeTran(conn, delPassableSql, [del[i]]);
+        await db.executeTran(conn, delPassable, [del[i]]);
       }
       result.succeeded = true;
+    } else {
+      result.reason = "Illegal admin.";
     }
     await conn.commit();
+    await conn.query(unlock);
   } catch (err) {
     await conn.rollback();
+    result.reason = err;
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
-    await conn.query(unlockTableSql);
     conn.release();
   }
   return report(result);
@@ -44,7 +45,14 @@ async function delPassable(
 
 export default express.Router().post("/delPassable", async (req, res) => {
   try {
-    res.json(await delPassable(req.body.adminId, req.body.passId));
+    if (
+      typeof req.body.adminId === "undefined" ||
+      typeof req.body.passId === "undefined"
+    ) {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    } else {
+      res.json(await delPassables(req.body.adminId, req.body.passId));
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }

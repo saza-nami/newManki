@@ -29,16 +29,6 @@ export async function existAdminTran(
   return false;
 }
 
-export async function executeTerminateAdminTran(
-  connected: mysql.PoolConnection,
-  adminId: string
-): Promise<boolean> {
-  const terminateAdminSql =
-    "UPDATE adminTable SET endAt = NOW() WHERE adminId = UUID_TO_BIN(?, 1)";
-  await db.executeTran(connected, terminateAdminSql, [adminId]);
-  return true;
-}
-
 export async function terminateInterval(): Promise<boolean> {
   const terminateAdminSql =
     "UPDATE adminTable SET endAt = NOW() \

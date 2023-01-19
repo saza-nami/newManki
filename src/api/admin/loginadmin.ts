@@ -8,16 +8,15 @@ import report from "api/_report";
 
 interface adminInfo extends ApiResult {
   adminId?: string;
-  reason?: string;
 }
 
-const reqAdminPassSql =
+const reqAdminPass =
   "SELECT adminPassHash FROM adminTable \
   WHERE endAt IS NOT NULL AND adminName = ? LOCK IN SHARE MODE";
-const updateAdminSql =
+const updateAdmin =
   "UPDATE adminTable SET adminId = (UUID_TO_BIN(UUID(), 1)), startAt = NOW(),\
   endAt = NULL WHERE adminName = ?";
-const reqAdminIdSql =
+const reqAdminId =
   "SELECT BIN_TO_UUID(adminId, 1) FROM adminTable \
   WHERE adminName = ? LOCK IN SHARE MODE";
 
@@ -26,27 +25,21 @@ async function loginAdmin(
   adminPass: string
 ): Promise<adminInfo> {
   const result: adminInfo = { succeeded: false };
-  console.log(adminName, adminPass);
-  if (typeof adminName === undefined && typeof adminPass === undefined) {
-    return report(result);
-  }
   const conn = await db.createNewConn();
-
   try {
     await conn.beginTransaction();
     const admin = db.extractElem(
-      await db.executeTran(conn, reqAdminPassSql, [adminName])
+      await db.executeTran(conn, reqAdminPass, [adminName])
     );
-
     if (
       admin !== undefined &&
       "adminPassHash" in admin &&
       admin["adminPassHash"] !== undefined
     ) {
       if (await bcrypt.compare(adminPass, admin["adminPassHash"])) {
-        await db.executeTran(conn, updateAdminSql, [adminName]);
+        await db.executeTran(conn, updateAdmin, [adminName]);
         const adminId = db.extractElem(
-          await db.executeTran(conn, reqAdminIdSql, [adminName])
+          await db.executeTran(conn, reqAdminId, [adminName])
         );
         if (
           adminId !== undefined &&
@@ -65,6 +58,10 @@ async function loginAdmin(
     await conn.commit();
   } catch (err) {
     await conn.rollback();
+    result.reason = err;
+    if (err instanceof Error) {
+      result.reason = err.message;
+    }
     console.log(err);
   } finally {
     conn.release();
@@ -74,7 +71,14 @@ async function loginAdmin(
 
 export default express.Router().post("/loginAdmin", async (req, res) => {
   try {
-    res.json(await loginAdmin(req.body.adminName, req.body.adminPass));
+    if (
+      typeof req.body.adminName === "undefined" ||
+      typeof req.body.adminPass === "undefined"
+    ) {
+      res.json({ succeeded: false, reason: "Invalid request." });
+    } else {
+      res.json(await loginAdmin(req.body.adminName, req.body.adminPass));
+    }
   } catch (err) {
     res.status(500).json({ succeeded: false, reason: err });
   }
