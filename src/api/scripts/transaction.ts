@@ -414,11 +414,11 @@ export async function intervalCarTran() {
   const intervaladd =
     "UPDATE carTable SET intervalCount = intervalCount + 1 \
     WHERE lastAt <= SUBTIME(NOW(), '00:00:10') \
-    AND (status != 5 OR status != 6)  AND intevalCount < 3";
+    AND status != 5 AND status != 6  AND intevalCount < 3";
   const intervalReset =
     "UPDATE carTable SET intervalCount = 0 \
     WHERE lastAt >= SUBTIME(NOW(), '00:00:10') \
-    AND (status != 5 OR status != 6) AND intevalCount < 3";
+    AND status != 5 AND status != 6 AND intevalCount < 3";
   const errorCarsSql =
     "SELECT carId FROM carTable WHERE intevalCount = 3 FOR UPDATE";
   const stopCarSql = "UPDATE carTable SET status = 5 WHERE carId = ?";
@@ -475,7 +475,7 @@ export async function intervalUserTran() {
     finish = TRUE, endAt = NOW() WHERE orderId = ?";
   const freeCarSql =
     "UPDATE carTable SET status = 1 \
-    WHERE carId = ? AND (status != 5 OR status != 6)";
+    WHERE carId = ? AND status != 5 AND status != 6";
   const conn = await db.createNewConn();
 
   try {
