@@ -10,10 +10,16 @@ const port = 80;
 const corsOptions: cors.CorsOptions = {
   origin: [
     "http://karawasa.kohga.local:8080",
-    "http://localhost",
-    "http://localhost:3000",
+    "http://localhost:3000", // FOR RASPI
     "http://www.kohga.local",
     "http://karawasa.kohga.local",
+    "http://tktm.kohga.local",
+    "http://saza.kohga.local",
+    "http://wata.kohga.local",
+    "http://watanabe.kohga.local",
+    "http://mkn.kohga.local",
+    "http://yoke.kohga.local",
+    "http://sazasub.kohga.local",
   ], // FOR DEBUG
   credentials: true,
   optionsSuccessStatus: 200,
