@@ -487,6 +487,7 @@ async function progressTran(
               param.route[0][0],
               orderId,
             ]);
+            await db.executeTran(connected, arrivalCar, [carId]);
             nextPosition = null;
           } else {
             /**巡回しない場合 */
