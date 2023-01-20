@@ -267,6 +267,7 @@ async function progressTran(
     };
     // 車が走行中で停留所に目的地にもいない場合
     if (!param.arrival && !param.finish) {
+      /*
       // 車が経路の始点に向かっている時
       if (!param.arrange) {
         // 車が経路の始点についたら
@@ -427,6 +428,87 @@ async function progressTran(
             ]);
             nextPosition = param.route[param.pRoute - 1][param.pPoint + 2];
           }
+        }
+      }
+      */
+
+      if (!param.arrange) {
+        /**手配経路走行中 */
+        if (
+          param.pPoint === 0 &&
+          param.nextPoint.lat === param.carToRoute[param.pPoint].lat &&
+          param.nextPoint.lng === param.carToRoute[param.pPoint].lng
+        ) {
+          /**初回処理 */
+          await db.executeTran(connected, initArr, [
+            param.carToRoute[1],
+            orderId,
+          ]);
+          nextPosition = param.carToRoute[param.pPoint + 1];
+        } else if (param.pPoint + 2 === param.carToRoute.length) {
+          /**手配経路到着処理 */
+          await db.executeTran(connected, arrangeOrder, [
+            param.route[0][0],
+            orderId,
+          ]);
+          await db.executeTran(connected, arrangeCar, [carId]);
+          nextPosition = null;
+        } else {
+          /**進行処理 */
+          await db.executeTran(connected, notArrOrder, [
+            param.carToRoute[param.pPoint + 2],
+            orderId,
+          ]);
+          nextPosition = param.carToRoute[param.pPoint + 2];
+        }
+      } else {
+        /**経路走行中 */
+        if (
+          param.pPoint === 0 &&
+          param.nextPoint.lat ===
+            param.route[param.pRoute - 1][param.pPoint].lat &&
+          param.nextPoint.lng ===
+            param.route[param.pRoute - 1][param.pPoint].lng
+        ) {
+          /**初回処理 */
+          await db.executeTran(connected, initArr, [
+            param.route[param.pRoute - 1][param.pPoint + 1],
+            orderId,
+          ]);
+          nextPosition = param.route[param.pRoute - 1][param.pPoint + 1];
+        } else if (
+          param.pRoute === param.route.length - 1 &&
+          param.pPoint + 2 === param.route[param.pRoute - 1].length
+        ) {
+          /**目的地到着処理 */
+          if (param.junkai) {
+            /**巡回する場合 */
+            await db.executeTran(connected, junkaiOrder, [
+              param.route[0][0],
+              orderId,
+            ]);
+            nextPosition = null;
+          } else {
+            /**巡回しない場合 */
+            await db.executeTran(connected, finishOrder, [orderId]);
+            await db.executeTran(connected, finishCar, [carId]);
+            nextPosition = null;
+          }
+        } else if (param.pPoint + 2 === param.route[param.pRoute - 1].length) {
+          /**停留所到着処理 */
+          await db.executeTran(connected, arrivalOrder, [
+            param.route[param.pRoute][0],
+            orderId,
+          ]);
+          await db.executeTran(connected, arrivalCar, [carId]);
+          nextPosition = null;
+        } else {
+          /**進行処理 */
+          await db.executeTran(connected, moving, [
+            param.carToRoute[param.pPoint + 2],
+            orderId,
+          ]);
+          nextPosition = param.carToRoute[param.pPoint + 2];
         }
       }
     }
