@@ -477,7 +477,7 @@ async function progressTran(
           ]);
           nextPosition = param.route[param.pRoute - 1][param.pPoint + 1];
         } else if (
-          param.pRoute === param.route.length - 1 &&
+          param.pRoute === param.route.length &&
           param.pPoint + 2 === param.route[param.pRoute - 1].length
         ) {
           /**目的地到着処理 */
