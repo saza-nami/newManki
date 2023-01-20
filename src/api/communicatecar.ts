@@ -505,10 +505,10 @@ async function progressTran(
         } else {
           /**進行処理 */
           await db.executeTran(connected, moving, [
-            param.carToRoute[param.pPoint + 2],
+            param.route[param.pRoute - 1][param.pPoint + 2],
             orderId,
           ]);
-          nextPosition = param.carToRoute[param.pPoint + 2];
+          nextPosition = param.route[param.pRoute - 1][param.pPoint + 2];
         }
       }
     }
