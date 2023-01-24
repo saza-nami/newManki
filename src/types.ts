@@ -23,7 +23,7 @@ export interface car {
 }
 
 // 地点情報
-export interface Node {
+export interface NodeInfo {
   position: Position;
   gCost: number /* startから現在地点までのコスト */;
   hCost: number /* 現在地点からgoalまでのコスト */;
