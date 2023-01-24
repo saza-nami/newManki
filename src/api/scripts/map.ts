@@ -1,4 +1,4 @@
-import { NodeInfo, PassablePoint, Position } from "types";
+import { PassablePoint, Position } from "types";
 
 import * as db from "database";
 import mysql from "mysql2/promise";
@@ -66,28 +66,6 @@ function approx(A: Position, B: Position): boolean {
   return false;
 }
 
-// 隣接地点情報生成
-function createNodeInfo(
-  parent: NodeInfo,
-  parentNo: number,
-  goal: Position,
-  passPoint: PassablePoint[]
-) {
-  const nexts = addNode(parent.position);
-  const nodes: NodeInfo[] = [];
-  for (const n of nexts) {
-    if (reachIn(parent.position, n, passPoint))
-      nodes.push({
-        position: n,
-        gCost: parent.gCost + dirdist.distanceTo(parent.position, n),
-        hCost: dirdist.distanceTo(n, goal),
-        comfirm: false,
-        parent: parentNo,
-      });
-  }
-  return nodes;
-}
-
 /** distanceの届く範囲内判定 */
 function reachIn(
   p: Position,
@@ -133,7 +111,6 @@ export {
   getPassPos,
   addNode,
   approx,
-  createNodeInfo,
   reachIn,
   isReachable,
   isPassable,
