@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
 import * as db from "database";
-import { Position } from "types";
+import { PassablePoint, Position } from "types";
 
 /** ユーザ識別子が有効か */
 export async function existUserTran(
@@ -142,4 +142,27 @@ export async function executeTerminate(
     }
   }
   return true;
+}
+
+/** databaseから通行可能領域点群を取得 */
+export async function getPassPos(
+  connected: mysql.PoolConnection
+): Promise<PassablePoint[]> {
+  const result: PassablePoint[] = [];
+  const passableSql =
+    "SELECT radius, lat, lng FROM passableTable LOCK IN SHARE MODE";
+  const isPassable = db.extractElems(
+    await db.executeTran(connected, passableSql)
+  );
+  if (isPassable !== undefined) {
+    for (const elem of isPassable) {
+      if ("radius" in elem && "lat" in elem && "lng" in elem) {
+        result.push({
+          position: { lat: Number(elem["lat"]), lng: Number(elem["lng"]) },
+          radius: Number(elem["radius"]),
+        });
+      }
+    }
+  }
+  return result;
 }

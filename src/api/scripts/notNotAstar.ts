@@ -117,13 +117,16 @@ function getMinIndex(nodes: NodeInfo[]): number {
 }
 
 /** 最適経路直線化 */
-function optimization(p: Position[], passPoints: PassablePoint[]): Position[] {
+function optimization(
+  route: Position[],
+  passPoints: PassablePoint[]
+): Position[] {
   const data: Position[] = [];
-  data.push(p[0]);
-  for (let i = 0; i < p.length - 2; i) {
-    for (let j = p.length - 1; i < j; j--) {
-      if (map.isReachable(p[i], p[j], passPoints)) {
-        data.push(p[j]);
+  data.push(route[0]);
+  for (let i = 0; i < route.length - 2; i) {
+    for (let j = route.length - 1; i < j; j--) {
+      if (map.isReachable(route[i], route[j], passPoints)) {
+        data.push(route[j]);
         i = j;
       }
     }
