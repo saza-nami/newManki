@@ -23,7 +23,7 @@ async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
-      const passPoints: PassablePoint[] = await map.getPassPos(conn);
+      const passPoints: PassablePoint[] = await global.getPassPos(conn);
       const row = db.extractElem(
         await db.executeTran(conn, reqRouteInfo, [routeName])
       );

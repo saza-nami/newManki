@@ -1,7 +1,5 @@
 import { NodeInfo, PassablePoint, Position } from "types";
 
-import * as db from "database";
-import mysql from "mysql2/promise";
 import * as dirdist from "api/scripts/dirdist";
 
 /** 地点探索距離[m] */
@@ -25,29 +23,6 @@ function checkRoute(route: Position[][], passPoints: PassablePoint[]) {
     }
   }
   return { available: true };
-}
-
-/** databaseから通行可能領域点群を取得 */
-async function getPassPos(
-  connected: mysql.PoolConnection
-): Promise<PassablePoint[]> {
-  const result: PassablePoint[] = [];
-  const passableSql =
-    "SELECT radius, lat, lng FROM passableTable LOCK IN SHARE MODE";
-  const isPassable = db.extractElems(
-    await db.executeTran(connected, passableSql)
-  );
-  if (isPassable !== undefined) {
-    for (const elem of isPassable) {
-      if ("radius" in elem && "lat" in elem && "lng" in elem) {
-        result.push({
-          position: { lat: Number(elem["lat"]), lng: Number(elem["lng"]) },
-          radius: Number(elem["radius"]),
-        });
-      }
-    }
-  }
-  return result;
 }
 
 /** 評価候補のノード群を生成 */
@@ -129,7 +104,6 @@ function isPassable(p: Position, passPoints: PassablePoint[]): boolean {
 
 export {
   checkRoute,
-  getPassPos,
   addNode,
   approx,
   createNodeInfo,
