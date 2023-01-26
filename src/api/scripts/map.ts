@@ -1,4 +1,4 @@
-import { PassablePoint, Position } from "types";
+import { NodeInfo, PassablePoint, Position } from "types";
 
 import * as dirdist from "api/scripts/dirdist";
 
@@ -39,6 +39,28 @@ function approx(A: Position, B: Position): boolean {
   const distance = dirdist.distanceTo(A, B);
   if (distance < stanDistance / 2) return true;
   return false;
+}
+
+// 隣接地点情報生成
+function createNodeInfo(
+  parent: NodeInfo,
+  parentNo: number,
+  goal: Position,
+  passPoint: PassablePoint[]
+) {
+  const nexts = addNode(parent.position);
+  const nodes: NodeInfo[] = [];
+  for (const n of nexts) {
+    if (reachIn(parent.position, n, passPoint))
+      nodes.push({
+        position: n,
+        gCost: parent.gCost + dirdist.distanceTo(parent.position, n),
+        hCost: dirdist.distanceTo(n, goal),
+        comfirm: false,
+        parent: parentNo,
+      });
+  }
+  return nodes;
 }
 
 /** distanceの届く範囲内判定 */
@@ -84,6 +106,7 @@ export {
   checkRoute,
   addNode,
   approx,
+  createNodeInfo,
   reachIn,
   isReachable,
   isPassable,
