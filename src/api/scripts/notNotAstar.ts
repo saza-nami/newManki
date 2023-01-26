@@ -1,4 +1,4 @@
-import { Position, NodeInfo, PassablePoint } from "types";
+import { Position, Node, PassablePoint } from "types";
 
 import * as map from "api/scripts/map";
 import * as dirdist from "api/scripts/dirdist";
@@ -9,14 +9,14 @@ function Astar(
   goal: Position,
   passPoints: PassablePoint[]
 ): Position[] | null {
-  let goalInfo: NodeInfo = {
+  let goalNode: Node = {
     position: goal,
     gCost: Number.MAX_VALUE,
     hCost: dirdist.distanceTo(start, goal),
     comfirm: false,
     parent: null,
   };
-  const nodes: NodeInfo[] = [
+  const nodes: Node[] = [
     {
       position: start,
       gCost: 0,
@@ -26,60 +26,60 @@ function Astar(
     },
   ];
 
-  while (goalInfo.parent === null) {
+  while (goalNode.parent === null) {
     const minIndex = getMinIndex(nodes);
-    if (minIndex < 0) {
-      // 探索失敗
-      return null;
-    } else {
-      // 隣接地点生成
+    if (minIndex != -1) {
       nodes[minIndex].comfirm = true;
-      const nextNodes: (NodeInfo | false)[] = map.createNodeInfo(
-        nodes[minIndex],
-        minIndex,
-        goal,
-        passPoints
-      );
-
-      let reachInfo: NodeInfo | false = false;
-      nextNodes.forEach((next) => {
-        if (next != false) {
-          if (map.reachIn(next.position, goal, passPoints)) {
-            const f = next.gCost + dirdist.distanceTo(next.position, goal);
-            if (goalInfo.gCost > f) {
-              reachInfo = next;
-              goalInfo.gCost = f;
+      const newNodes = map.addNode(nodes[minIndex].position);
+      const nodesLength = nodes.length;
+      for (const n of newNodes) {
+        let flag = true;
+        if (map.reachIn(nodes[minIndex].position, n, passPoints)) {
+          const node: Node = {
+            position: n,
+            gCost:
+              nodes[minIndex].gCost +
+              dirdist.distanceTo(nodes[minIndex].position, n),
+            hCost: dirdist.distanceTo(n, goal),
+            comfirm: false,
+            parent: minIndex,
+          };
+          // ゴール到達可能かつ候補点の中で最適か
+          if (
+            map.reachIn(node.position, goal, passPoints) &&
+            node.gCost + dirdist.distanceTo(node.position, goal) <
+              goalNode.gCost
+          ) {
+            goalNode = {
+              position: goal,
+              gCost: node.gCost + dirdist.distanceTo(node.position, goal),
+              hCost: 0,
+              comfirm: true,
+              parent: nodes.length,
+            };
+          } else {
+            // 評価済み地点重複確認
+            for (let i = 0; i < nodesLength; i++) {
+              if (map.approx(node.position, nodes[i].position)) {
+                if (node.gCost < nodes[i].gCost) {
+                  if (nodes[i].comfirm) node.comfirm = true;
+                  nodes[i] = node;
+                }
+                flag = false;
+                break;
+              }
             }
           }
+          // 評価済み地点未重複の場合
+          if (flag) nodes.push(node);
         }
-      });
-
-      if (reachInfo) {
-        // 探索終了
-        goalInfo.parent = nodes.length;
-        nodes.push(reachInfo);
-        break;
-      } else {
-        // 同一地点処理
-        nodes.forEach((node, nodeIndex) => {
-          nextNodes.forEach((next, nextIndex) => {
-            if (next != false && map.approx(node.position, next.position)) {
-              if (node.gCost > next.gCost) {
-                next.comfirm = node.comfirm;
-                nodes[nodeIndex] = next;
-              }
-              nextNodes[nextIndex] = false;
-            }
-          });
-        });
-        nextNodes.forEach((next) => {
-          if (next != false) nodes.push(next);
-        });
       }
+    } else {
+      return null;
     }
   }
 
-  let childNode = goalInfo;
+  let childNode = goalNode;
   const result: Position[] = [];
   while (1) {
     result.unshift(childNode.position);
@@ -95,25 +95,104 @@ async function manAstar(
   goal: Position,
   passPoints: PassablePoint[]
 ): Promise<Position[] | null> {
-  const result = Astar(start, goal, passPoints);
-  await new Promise<void>((r) => setTimeout(() => r(), 0));
-  return result;
+  let goalNode: Node = {
+    position: goal,
+    gCost: Number.MAX_VALUE,
+    hCost: dirdist.distanceTo(start, goal),
+    comfirm: false,
+    parent: null,
+  };
+  const nodes: Node[] = [
+    {
+      position: start,
+      gCost: 0,
+      hCost: dirdist.distanceTo(start, goal),
+      comfirm: false,
+      parent: null,
+    },
+  ];
+  let foo = 0;
+
+  while (goalNode.parent === null) {
+    const minIndex = getMinIndex(nodes);
+    if (minIndex != -1) {
+      nodes[minIndex].comfirm = true;
+      const newNodes = map.addNode(nodes[minIndex].position);
+      const nodesLength = nodes.length;
+      for (const n of newNodes) {
+        let flag = true;
+        if (map.reachIn(nodes[minIndex].position, n, passPoints)) {
+          const node: Node = {
+            position: n,
+            gCost:
+              nodes[minIndex].gCost +
+              dirdist.distanceTo(nodes[minIndex].position, n),
+            hCost: dirdist.distanceTo(n, goal),
+            comfirm: false,
+            parent: minIndex,
+          };
+          // ゴール到達可能かつ候補点の中で最適か
+          if (
+            map.reachIn(node.position, goal, passPoints) &&
+            node.gCost + dirdist.distanceTo(node.position, goal) <
+              goalNode.gCost
+          ) {
+            goalNode = {
+              position: goal,
+              gCost: node.gCost + dirdist.distanceTo(node.position, goal),
+              hCost: 0,
+              comfirm: true,
+              parent: nodes.length,
+            };
+          } else {
+            // 評価済み地点重複確認
+            for (let i = 0; i < nodesLength; i++) {
+              if (map.approx(node.position, nodes[i].position)) {
+                if (node.gCost < nodes[i].gCost) {
+                  if (nodes[i].comfirm) node.comfirm = true;
+                  nodes[i] = node;
+                }
+                flag = false;
+                break;
+              }
+            }
+          }
+          // 評価済み地点未重複の場合
+          if (flag) nodes.push(node);
+        }
+        foo++;
+        if (foo % 7 === 0) {
+          await new Promise<void>((r) => setTimeout(() => r(), 0));
+        }
+      }
+    } else {
+      return null;
+    }
+  }
+  let childNode = goalNode;
+  const result: Position[] = [];
+  while (1) {
+    result.unshift(childNode.position);
+    if (childNode.parent === null) break;
+    childNode = nodes[childNode.parent];
+  }
+  return optimization(result, passPoints);
 }
 
-// 評価済みノード群から最小コストノードの算出
-function getMinIndex(nodes: NodeInfo[]): number {
+/** 地点群から未評価最小コスト地点の算出 */
+function getMinIndex(nodes: Node[]): number {
   let minCost = Number.MAX_VALUE;
-  let minIndex = -1;
-  nodes.forEach((node, index) => {
-    if (!node.comfirm) {
-      const cost = node.gCost + node.hCost;
-      if (minCost > cost) {
-        minCost = cost;
-        minIndex = index;
-      }
+  let minIndex = 0;
+  const length = nodes.length;
+  for (let i = 0; i < length; i++) {
+    const cost = nodes[i].gCost + nodes[i].hCost;
+    if (minCost > cost && !nodes[i].comfirm) {
+      minCost = cost;
+      minIndex = i;
     }
-  });
-  return minIndex;
+  }
+  if (minCost !== Number.MAX_VALUE) return minIndex;
+  return -1;
 }
 
 /** 最適経路直線化 */
