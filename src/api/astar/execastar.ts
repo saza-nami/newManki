@@ -19,7 +19,7 @@ async function createRoute(
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
-      passPoints = await map.getPassPos(conn);
+      passPoints = await global.getPassPos(conn);
     } else {
       result.reason = "Illegal user.";
     }

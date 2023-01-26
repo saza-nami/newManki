@@ -2,6 +2,7 @@ import { Position, PassablePoint, Allocated, order, car } from "types";
 import * as Astar from "api/scripts/notNotAstar";
 import * as db from "database";
 import * as map from "api/scripts/map";
+import * as global from "api/scripts/global";
 
 /** 車未割当のユーザに対する車割り当て */
 export async function unallocateCarTran() {
@@ -40,7 +41,7 @@ export async function unallocateCarTran() {
   try {
     await conn1.beginTransaction();
     await conn1.query(lockURPRORCR);
-    passPoints = await map.getPassPos(conn1);
+    passPoints = await global.getPassPos(conn1);
     const orderIds = db.extractElems(await db.executeTran(conn1, getOrderIds));
     const carsInfo = db.extractElems(await db.executeTran(conn1, getCarsInfo));
     if (orderIds !== undefined) {
@@ -199,7 +200,7 @@ export async function allocatedCarTran() {
   try {
     await conn1.beginTransaction();
     await conn1.query(lockURPRORCR);
-    passPoints = await map.getPassPos(conn1);
+    passPoints = await global.getPassPos(conn1);
     const lists = db.extractElems(await db.executeTran(conn1, getLists));
     if (lists !== undefined) {
       if (lists.length > 0) {

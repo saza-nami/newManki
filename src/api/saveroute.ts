@@ -37,7 +37,7 @@ async function saveRoute(
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
-      const passPoints: PassablePoint[] = await map.getPassPos(conn);
+      const passPoints: PassablePoint[] = await global.getPassPos(conn);
       const existName = db.extractElem(
         await db.executeTran(conn, searchName, [routeName])
       );
