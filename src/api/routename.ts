@@ -24,7 +24,7 @@ async function routeNames(userId: string): Promise<RouteInfo> {
   try {
     await conn.beginTransaction();
     if ((await global.existUserTran(conn, userId)) === true) {
-      const passPoints: PassablePoint[] = await map.getPassPos(conn);
+      const passPoints: PassablePoint[] = await global.getPassPos(conn);
       const rows = db.extractElems(await db.executeTran(conn, getRouteNames));
       const passableNames: PassableName[] = [];
       console.log(rows);
