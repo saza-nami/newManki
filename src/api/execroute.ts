@@ -34,7 +34,7 @@ async function reserveRoute(
     await conn.beginTransaction();
     await conn.query(lockUWOWPR);
     if ((await global.existUserTran(conn, userId)) === true) {
-      const passPoints: PassablePoint[] = await map.getPassPos(conn);
+      const passPoints: PassablePoint[] = await global.getPassPos(conn);
       // check route in passable area
       if (map.checkRoute(route, passPoints).available === true) {
         // insert route in the database
