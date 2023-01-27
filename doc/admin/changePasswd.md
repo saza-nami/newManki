@@ -14,8 +14,8 @@ author:
 ## HTTP ヘッダ
 
 ```http
-POST /astar HTTP/1.1
-Host: http://sazasub.kohga.local
+POST /changePassword HTTP/1.1
+Host: http://api.kohga.local
 Accept: application/json; charset=utf-8
 Origin: http://www.kohga.local
 Content-Type: application/json; charset=utf-8
