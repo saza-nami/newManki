@@ -21,18 +21,18 @@ async function addPassables(
   try {
     await conn.beginTransaction();
     await conn.query(lockPWAR);
-    if ((await admin.existAdminTran(conn, adminId)) === true) {
-      for (const i in add) {
-        await db.executeTran(conn, addPassable, [
-          add[i].radius,
-          add[i].position.lat,
-          add[i].position.lng,
-        ]);
-      }
-      result.succeeded = true;
-    } else {
-      result.reason = "Illegal admin.";
+    //if ((await admin.existAdminTran(conn, adminId)) === true) {
+    for (const i in add) {
+      await db.executeTran(conn, addPassable, [
+        add[i].radius,
+        add[i].position.lat,
+        add[i].position.lng,
+      ]);
     }
+    result.succeeded = true;
+    //} else {
+    //  result.reason = "Illegal admin.";
+    //}
     await conn.commit();
     await conn.query(unlock);
   } catch (err) {

@@ -16,7 +16,7 @@ author:
 
 ```http
 POST /reqPassable HTTP/1.1
-Host: http://sazasub.kohga.local
+Host: http://api.kohga.local
 Accept: application/json; charset=utf-8
 Origin: http://www.kohga.local
 Content-Type: application/json; charset=utf-8
