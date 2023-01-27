@@ -5,6 +5,7 @@ author:
   - Takatomo0424
   - KusaReMKN
 ---
+
 # 名称
 
 **`saveRoute`** -- 経路に名前を付けて保存する
@@ -15,7 +16,7 @@ author:
 
 ```http
 POST /saveRoute HTTP/1.1
-Host: http://sazasub.kohga.local
+Host: http://api.kohga.local
 Accept: application/json; charset=utf-8
 Origin: http://www.kohga.local
 Content-Type: application/json; charset=utf-8
@@ -23,8 +24,8 @@ Content-Type: application/json; charset=utf-8
 
 ## JSON の内容
 
-| キー名        | 値の型           | 値の内容                     |
-| ------------- | ---------------- | ---------------------------- |
+| キー名      | 値の型         | 値の内容                     |
+| ----------- | -------------- | ---------------------------- |
 | `userId`    | `string`       | API を利用するユーザの識別子 |
 | `routeName` | `string`       | 経路に付ける名前             |
 | `data`      | `Position[][]` | 保存する経路                 |
@@ -56,9 +57,9 @@ Content-Type: application/json; charset=utf-8
 **`saveRoute`** API は
 次の要素を持つオブジェクトを表す JSON 文字列を応答します。
 
-| キー名        | 値の型      | 値の内容                                 |
-| ------------- | ----------- | ---------------------------------------- |
-| `succeeded` | `boolean` | 保存に成功した場合に `true`            |
+| キー名      | 値の型    | 値の内容                                 |
+| ----------- | --------- | ---------------------------------------- |
+| `succeeded` | `boolean` | 保存に成功した場合に `true`              |
 | `reason`    | `string`  | 保存に失敗した理由（失敗時）             |
 | `routeName` | `string`  | 保存された経路に付けられた名前（成功時） |
 
@@ -69,15 +70,15 @@ Content-Type: application/json; charset=utf-8
 このメッセージは人間が読める形式ですが、デバッグ用途を想定しており、
 ユーザインタフェースに直接表示するためのものではありません。
 
-| `reason` メンバの値                           | エラー内容                                     |
-| ----------------------------------------------- | ---------------------------------------------- |
-| `Invalid request.`                            | 不正なリクエストです。                         |
-| `Illegal user.`                               | リクエストされたユーザが無効です。             |
+| `reason` メンバの値                           | エラー内容                                   |
+| --------------------------------------------- | -------------------------------------------- |
+| `Invalid request.`                            | 不正なリクエストです。                       |
+| `Illegal user.`                               | リクエストされたユーザが無効です。           |
 | `routeName is too long.`                      | `routeName` が長すぎます。                   |
 | `route is too long.`                          | `route` が長すぎます。                       |
 | `Duplicate routeName.`                        | `routeName` が重複しています。               |
 | `RouteNo. ~ PointNo. ~ could not be reached.` | ルート  ~ の地点 ~  に到達できませんでした。 |
-| その他                                          | 例外により catch されたエラーです。            |
+| その他                                        | 例外により catch されたエラーです。          |
 
 # 関連項目
 
