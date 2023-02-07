@@ -49,7 +49,7 @@ NinJa が Manki の管理下にあることを（車が）正常状態にある�
 
 ```ts
 interface CarInfo {
-  carId: number; // 車識別子
+  carId: string; // 車識別子
   status: number; // 車の状態
   nowPoint: Position; // 現在地
   battery: number; // バッテリー残量（単位:[%]）
