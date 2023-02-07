@@ -32,7 +32,7 @@ function Astar(
       // 探索失敗
       return null;
     } else {
-      // 隣接地点生成
+      // 隣接地点情報生成
       nodes[minIndex].comfirm = true;
       const nextNodes: (NodeInfo | false)[] = map.createNodeInfo(
         nodes[minIndex],
@@ -120,7 +120,7 @@ async function manAstar(
       // 探索失敗
       return null;
     } else {
-      // 隣接地点生成
+      // 隣接地点情報生成
       nodes[minIndex].comfirm = true;
       const nextNodes: (NodeInfo | false)[] = map.createNodeInfo(
         nodes[minIndex],
@@ -128,7 +128,6 @@ async function manAstar(
         goal,
         passPoints
       );
-
       let reachInfo: NodeInfo | false = false;
       nextNodes.forEach((next) => {
         if (next != false) {
@@ -180,7 +179,7 @@ async function manAstar(
   return optimization(result, passPoints);
 }
 
-// 評価済みノード群から最小コストノードの算出
+/** 最小コスト地点算出 */
 function getMinIndex(nodes: NodeInfo[]): number {
   let minCost = Number.MAX_VALUE;
   let minIndex = -1;
@@ -196,7 +195,7 @@ function getMinIndex(nodes: NodeInfo[]): number {
   return minIndex;
 }
 
-/** 最適経路直線化 */
+/** ルート直線化 */
 function optimization(
   route: Position[],
   passPoints: PassablePoint[]

@@ -2,13 +2,44 @@ import { NodeInfo, PassablePoint, Position } from "types";
 
 import * as dirdist from "api/scripts/dirdist";
 
+/** 経路、ルート判定結果 */
+interface CheckResult {
+  available: boolean;
+  reason?: {
+    route: number;
+    pos: number;
+  };
+}
+
 /** 地点探索距離[m] */
 const stanDistance = 1;
 /** 地点生成分解能 */
-const resolution = 18;
+const resolution = 360 / 8;
+/** 同一地点判定距離 */
+const identDistance =
+  stanDistance * Math.cos((90 - resolution / 2) * (Math.PI / 180));
 
-/** 経路の実行可能判定 */
-function checkRoute(route: Position[][], passPoints: PassablePoint[]) {
+/** 隣接地点生成 */
+function addNode(p: Position): Position[] {
+  const nodes: Position[] = [];
+  for (let i = 0; i < 360; i += resolution) {
+    nodes.push(dirdist.moveBy(p, stanDistance, i));
+  }
+  return nodes;
+}
+
+/** 同一地点判定 */
+function approx(A: Position, B: Position): boolean {
+  const distance = dirdist.distanceTo(A, B);
+  if (distance < identDistance) return true;
+  return false;
+}
+
+/** 経路、ルート通行可能判定 */
+function checkRoute(
+  route: Position[][],
+  passPoints: PassablePoint[]
+): CheckResult {
   for (let i = 0; i < route.length; i++) {
     for (let j = 0; j < route[i].length - 1; j++) {
       if (!isReachable(route[i][j], route[i][j + 1], passPoints)) {
@@ -25,29 +56,13 @@ function checkRoute(route: Position[][], passPoints: PassablePoint[]) {
   return { available: true };
 }
 
-/** 評価候補のノード群を生成 */
-function addNode(p: Position): Position[] {
-  const nodes: Position[] = [];
-  for (let i = 0; i < 360; i += 360 / resolution) {
-    nodes.push(dirdist.moveBy(p, stanDistance, i));
-  }
-  return nodes;
-}
-
-/** 同一地点判定*/
-function approx(A: Position, B: Position): boolean {
-  const distance = dirdist.distanceTo(A, B);
-  if (distance < stanDistance / 2) return true;
-  return false;
-}
-
-// 隣接地点情報生成
+/** 隣接地点情報生成 */
 function createNodeInfo(
   parent: NodeInfo,
   parentNo: number,
   goal: Position,
   passPoint: PassablePoint[]
-) {
+): NodeInfo[] {
   const nexts = addNode(parent.position);
   const nodes: NodeInfo[] = [];
   for (const n of nexts) {
@@ -63,7 +78,7 @@ function createNodeInfo(
   return nodes;
 }
 
-/** distanceの届く範囲内判定 */
+/** 探索距離内通行可能判定 */
 function reachIn(
   p: Position,
   q: Position,
@@ -75,13 +90,21 @@ function reachIn(
   return true;
 }
 
-/** 到達可能判定 */
+/** 地点有効判定 */
+function isPassable(p: Position, passPoints: PassablePoint[]): boolean {
+  for (const elem of passPoints) {
+    const distance = dirdist.distanceTo(p, elem.position);
+    if (elem.radius >= distance) return true;
+  }
+  return false;
+}
+
+/** 地点間通行可能判定 */
 function isReachable(
   p: Position,
   q: Position,
   passPoints: PassablePoint[]
 ): boolean {
-  if (approx(p, q)) isPassable(p, passPoints);
   const dt = 0.1;
   const distance = dirdist.distanceTo(p, q);
   const div = Math.round(distance * 100) / 10;
@@ -93,21 +116,12 @@ function isReachable(
   return true;
 }
 
-/** 通行可能判定 */
-function isPassable(p: Position, passPoints: PassablePoint[]): boolean {
-  for (const elem of passPoints) {
-    const distance = dirdist.distanceTo(p, elem.position);
-    if (elem.radius >= distance) return true;
-  }
-  return false;
-}
-
 export {
-  checkRoute,
   addNode,
   approx,
+  checkRoute,
   createNodeInfo,
   reachIn,
-  isReachable,
   isPassable,
+  isReachable,
 };
