@@ -5,8 +5,9 @@ import { ApiResult, Position } from "types";
 import * as admin from "api/admin/admin";
 import * as db from "database";
 import report from "api/_report";
+
 interface CarInfo {
-  carId: number;
+  carId: string;
   status: number;
   nowPoint: Position;
   battery: number;
