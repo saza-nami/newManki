@@ -7,6 +7,7 @@ TARGETS=	addPassable.pdf \
 			reqCarInfo.pdf \
 			reqPassAdmin.pdf \
 			terminateAdmin.pdf \
+			database.pdf \
 
 PANDOC=		pandoc
 PANDOCFLAGS=	--pdf-engine=xelatex \
