@@ -4,17 +4,16 @@ subtitle: Manki API for Administrator Reference Manual
 author:
   - [Takatomo0424]
 ---
-
 # 名称
 
-**`chagePasswd`** -- 管理者のパスワードを変更する
+**`changePasswd`** -- 管理者のパスワードを変更する
 
 # 書式
 
 ## HTTP ヘッダ
 
 ```http
-POST /changePassword HTTP/1.1
+POST /changePasswd HTTP/1.1
 Host: http://api.kohga.local
 Accept: application/json; charset=utf-8
 Origin: http://www.kohga.local
@@ -23,8 +22,8 @@ Content-Type: application/json; charset=utf-8
 
 ## JSON の内容
 
-| キー名          | 値の型   | 値の内容                     |
-| --------------- | -------- | ---------------------------- |
+| キー名            | 値の型     | 値の内容                     |
+| ----------------- | ---------- | ---------------------------- |
 | `adminId`       | `string` | API を利用する管理者の識別子 |
 | `currentPasswd` | `string` | 管理者パスワード             |
 | `newPasswd`     | `string` | 変更後の管理者パスワード     |
@@ -41,21 +40,21 @@ Content-Type: application/json; charset=utf-8
 
 次の要素を持つオブジェクトを表す JSON 文字列を応答します。
 
-| キー名      | 値の型    | 値の内容                     |
-| ----------- | --------- | ---------------------------- |
-| `succeeded` | `boolean` | 変更に成功した場合に `true`  |
-| `reason`    | `string`  | 処理に失敗した理由（失敗時） |
+| キー名        | 値の型      | 値の内容                      |
+| ------------- | ----------- | ----------------------------- |
+| `succeeded` | `boolean` | 変更に成功した場合に `true` |
+| `reason`    | `string`  | 処理に失敗した理由（失敗時）  |
 
 # 診断
 
 エラー時に返される JSON の `reason` メンバは次の通りです。
 
 | `reason` メンバの値             | エラー内容                          |
-| ------------------------------- | ----------------------------------- |
-| `Invalid request.`              | 不正なリクエストです                |
+| --------------------------------- | ----------------------------------- |
+| `Invalid request.`              | 不正なリクエストです。              |
 | `No such administrator exists.` | リクエストされた管理者が無効です。  |
 | `Your password is wrong.`       | 管理者パスワードが間違っています。  |
-| その他                          | 例外により catch されたエラーです。 |
+| その他                            | 例外により catch されたエラーです。 |
 
 # 関連項目
 
