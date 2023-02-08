@@ -53,7 +53,7 @@ async function loginAdmin(
         result.reason = "Your password is wrong.";
       }
     } else {
-      result.reason = "Your name is wrong.";
+      result.reason = "Administrator is in use or your name is wrong.";
     }
     await conn.commit();
   } catch (err) {
