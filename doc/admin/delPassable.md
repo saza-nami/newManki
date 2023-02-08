@@ -49,7 +49,7 @@ Content-Type: application/json; charset=utf-8
 | `reason` メンバの値 | エラー内容                          |
 | ------------------- | ----------------------------------- |
 | `Invalid request.`  | 不正なリクエストです。              |
-| `Illegal admin`     | リクエストされた管理者が無効です。  |
+| `Illegal admin.`    | リクエストされた管理者が無効です。  |
 | その他              | 例外により catch されたエラーです。 |
 
 # 関連項目
