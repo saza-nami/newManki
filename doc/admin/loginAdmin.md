@@ -47,12 +47,12 @@ Content-Type: application/json; charset=utf-8
 
 エラー時に返される JSON の `reason` メンバは次の通りです。
 
-| `reason` メンバの値       | エラー内容                          |
-| ------------------------- | ----------------------------------- |
-| `Invalid request.`        | 不正なリクエストです。              |
-| `Your neme is wrong.`     | 管理者名が間違っています。          |
-| `Your password is wrong.` | 管理者パスワードが間違っています。  |
-| その他                    | 例外により catch されたエラーです。 |
+| `reason` メンバの値                                  | エラー内容                                       |
+| ---------------------------------------------------- | ------------------------------------------------ |
+| `Invalid request.`                                   | 不正なリクエストです。                           |
+| `The administrator is in use or your name is wrong.` | その管理者が使用中か、管理者名が間違っています。 |
+| `Your password is wrong.`                            | 管理者パスワードが間違っています。               |
+| その他                                               | 例外により catch されたエラーです。              |
 
 # 関連項目
 
