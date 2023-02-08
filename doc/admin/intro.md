@@ -66,16 +66,25 @@ interface CarInfo {
 | 5      | 確認されていない異常状態 : 車に異常が発生していて、管理者が認知していない状態   |
 | 6      | 確認された異常状態 : 車に異常が発生していて、管理者が認知している状態           |
 
-通行可能領域情報
-: 車が通行可能である領域を表す地点とその地点からの半径の対。
-プログラム中では、それに識別子を加えて `PassableInfo` として
-次のように表現される。
+通行可能領域
 
-```ts
+: 車が通行通行可能である領域を表す地点とその地点からの半径の対。
+プログラム中では、次のように表現される。
+
+```typescript
 interface PassableInfo {
   position: Position; // 地点
   radius: number; // 半径（メートル）
-  passableId: number; // 識別子
+}
+```
+
+通行可能領域情報
+: 通行可能領域に識別子を加えたもの。
+プログラム中では `PassableInfo` として次のように表現される。
+
+```ts
+interface PassableInfo extends PassablePoint {
+  passableId: number;
 }
 ```
 
