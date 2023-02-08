@@ -72,7 +72,7 @@ interface CarInfo {
 プログラム中では、次のように表現される。
 
 ```typescript
-interface PassableInfo {
+interface PassablePoint {
   position: Position; // 地点
   radius: number; // 半径（メートル）
 }
@@ -84,7 +84,7 @@ interface PassableInfo {
 
 ```ts
 interface PassableInfo extends PassablePoint {
-  passableId: number;
+  passableId: number; // 識別子
 }
 ```
 
