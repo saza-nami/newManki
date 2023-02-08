@@ -84,7 +84,7 @@ interface PassableInfo {
 
 ```ts
 interface PassableInfo extends PassablePoint {
-  passableId: number; // 識別子
+  passableId: number;
 }
 ```
 
