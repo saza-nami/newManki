@@ -1,6 +1,6 @@
 ---
 title: intro
-subtitle: Manki API Reference Manual
+subtitle: Manki API for Administrator Reference Manual
 author:
   - [Takatomo0424]
 ---
