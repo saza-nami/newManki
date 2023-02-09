@@ -11,8 +11,8 @@ interface adminInfo extends ApiResult {
 }
 
 const reqAdminPass =
-  "SELECT adminPassHash FROM adminTable \
-  WHERE endAt IS NOT NULL AND adminName = ? LOCK IN SHARE MODE";
+  "SELECT adminPassHash, endAt FROM adminTable \
+  WHERE adminName = ? LOCK IN SHARE MODE";
 const updateAdmin =
   "UPDATE adminTable SET adminId = (UUID_TO_BIN(UUID(), 1)), startAt = NOW(),\
   endAt = NULL WHERE adminName = ?";
@@ -36,24 +36,28 @@ async function loginAdmin(
       "adminPassHash" in admin &&
       admin["adminPassHash"] !== undefined
     ) {
-      if (await bcrypt.compare(adminPass, admin["adminPassHash"])) {
-        await db.executeTran(conn, updateAdmin, [adminName]);
-        const adminId = db.extractElem(
-          await db.executeTran(conn, reqAdminId, [adminName])
-        );
-        if (
-          adminId !== undefined &&
-          "BIN_TO_UUID(adminId, 1)" in adminId &&
-          adminId["BIN_TO_UUID(adminId, 1)"] !== undefined
-        ) {
-          result.succeeded = true;
-          result.adminId = adminId["BIN_TO_UUID(adminId, 1)"];
+      if ("endAt" in admin && admin["endAt"] !== null) {
+        if (await bcrypt.compare(adminPass, admin["adminPassHash"])) {
+          await db.executeTran(conn, updateAdmin, [adminName]);
+          const adminId = db.extractElem(
+            await db.executeTran(conn, reqAdminId, [adminName])
+          );
+          if (
+            adminId !== undefined &&
+            "BIN_TO_UUID(adminId, 1)" in adminId &&
+            adminId["BIN_TO_UUID(adminId, 1)"] !== undefined
+          ) {
+            result.succeeded = true;
+            result.adminId = adminId["BIN_TO_UUID(adminId, 1)"];
+          }
+        } else {
+          result.reason = "Your password is wrong.";
         }
       } else {
-        result.reason = "Your password is wrong.";
+        result.reason = "The administrator is in use.";
       }
     } else {
-      result.reason = "The administrator is in use or your name is wrong.";
+      result.reason = "Your name is wrong.";
     }
     await conn.commit();
   } catch (err) {
