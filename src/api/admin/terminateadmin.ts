@@ -1,13 +1,16 @@
-/* 管理者終了 */
+/** 管理者の識別子を無効にする */
+
 import express from "express";
 import { ApiResult } from "types";
 import * as admin from "api/admin/admin";
 import * as db from "database";
 import report from "api/_report";
 
+/** sql */
 const endAdmin =
-  "UPDATE adminTable SET endAt = NOW() WHERE adminId = UUID_TO_BIN(?, 1)";
+  "UPDATE adminTable SET adminId = null, endAt = NOW() WHERE adminId = UUID_TO_BIN(?, 1)";
 
+/** API から呼び出される関数 */
 async function terminateAdmin(adminId: string): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
   const conn = await db.createNewConn();
@@ -32,6 +35,7 @@ async function terminateAdmin(adminId: string): Promise<ApiResult> {
   return report(result);
 }
 
+/** terminateAdmin API の実体 */
 export default express.Router().post("/terminateAdmin", async (req, res) => {
   try {
     if (typeof req.body.adminId === "undefined") {

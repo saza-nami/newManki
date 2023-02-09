@@ -1,4 +1,4 @@
-/* ワンタイム管理者作成 */
+/** 管理者識別子を発行する */
 
 import bcrypt from "bcrypt";
 import express from "express";
@@ -6,10 +6,12 @@ import { ApiResult } from "types";
 import * as db from "database";
 import report from "api/_report";
 
+/** API の返り値 */
 interface adminInfo extends ApiResult {
   adminId?: string;
 }
 
+/** sql */
 const reqAdminPass =
   "SELECT adminPassHash, endAt FROM adminTable \
   WHERE adminName = ? LOCK IN SHARE MODE";
@@ -20,6 +22,7 @@ const reqAdminId =
   "SELECT BIN_TO_UUID(adminId, 1) FROM adminTable \
   WHERE adminName = ? LOCK IN SHARE MODE";
 
+/** API から呼び出される関数 */
 async function loginAdmin(
   adminName: string,
   adminPass: string
@@ -72,6 +75,7 @@ async function loginAdmin(
   return report(result);
 }
 
+/** loginAdmin API の実体 */
 export default express.Router().post("/loginAdmin", async (req, res) => {
   try {
     if (

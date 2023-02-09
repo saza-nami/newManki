@@ -1,4 +1,4 @@
-// 通行可能領域登録 API
+/** 通行可能領域を追加する */
 
 import express from "express";
 import { ApiResult, PassablePoint } from "types";
@@ -6,11 +6,13 @@ import * as admin from "api/admin/admin";
 import * as db from "database";
 import report from "api/_report";
 
+/** sql */
 const addPassable =
   "INSERT INTO passableTable(radius, lat, lng) VALUES(?, ?, ?)";
 const lockPWAR = "LOCK TABLES passableTable WRITE, adminTable READ";
 const unlock = "UNLOCK TABLES";
 
+/** API から呼び出される関数 */
 async function addPassables(
   adminId: string,
   passPoints: PassablePoint[]
@@ -47,6 +49,7 @@ async function addPassables(
   return report(result);
 }
 
+/** addPassable API の実体 */
 export default express.Router().post("/addPassable", async (req, res) => {
   try {
     if (

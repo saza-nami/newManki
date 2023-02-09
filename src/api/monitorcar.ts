@@ -1,4 +1,4 @@
-// 車を見る画面で呼ばれるAPI
+/** ユーザに紐づいている経路の実行状況や車の情報を取得する */
 
 import express from "express";
 import { ApiResult, Position } from "types";
@@ -6,6 +6,7 @@ import * as db from "database";
 import * as global from "api/scripts/global";
 import report from "api/_report";
 
+/** API の返り値 */
 interface MonitorCar extends ApiResult {
   route?: Position[][];
   dest?: Position[];
@@ -19,7 +20,7 @@ interface MonitorCar extends ApiResult {
   reserve?: boolean;
 }
 
-// arrival true を確認する
+/** sql */
 const lockORCR = "LOCK TABLES userTable READ, orderTable READ, carTable READ";
 const unlock = "UNLOCK TABLES";
 const reqOrderStatusSql =
@@ -33,9 +34,9 @@ const reqCarStatusSql =
     WHERE userId = UUID_TO_BIN(?, 1) AND endAt IS NULL LOCK IN SHARE MODE) \
     LOCK IN SHARE MODE";
 
+/** API から呼び出される */
 async function monitorCar(userId: string): Promise<MonitorCar> {
   const result: MonitorCar = { succeeded: false };
-  const rnd = Math.random() * 100; // FOR DEBUG
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
@@ -82,8 +83,7 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
                 ? false
                 : true;
             result.nowPoint = carStatus["nowPoint"];
-            // result.battery = carStatus["battery"];
-            result.battery = rnd; // FOR DEBUG
+            result.battery = carStatus["battery"];
             result.reserve = true;
           }
         } else {
@@ -129,6 +129,7 @@ async function monitorCar(userId: string): Promise<MonitorCar> {
   return report(result);
 }
 
+/** monitorCar API の実体 */
 export default express.Router().post("/monitorCar", async (req, res) => {
   try {
     if (typeof req.body.userId === "undefined") {

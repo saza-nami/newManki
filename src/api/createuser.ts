@@ -1,20 +1,22 @@
-/* 車を使えるかチェックするところで呼ばれるAPI (サービス利用開始) */
+/** ユーザ識別子を発行する */
 
 import express from "express";
 import { ApiResult, Access } from "types";
 import * as db from "database";
 import report from "api/_report";
 
-// Return value of this Web API
+/** API の返り値 */
 interface CreateUserResult extends ApiResult {
-  userId?: string; // UUID
+  userId?: string;
 }
 
-// FIXME, available users of system
+/** システム利用可能人数 [人] */
 const maxUsers = 100;
-// dos attack countermeasures proc
+
+/** dos 攻撃対策用変数 */
 let lastLog: Access = { date: [0], ipAddress: ["anyonyomarubobo"] };
 
+/** sql */
 const lockUW = "LOCK TABLES userTable WRITE";
 const unlock = "UNLOCK TABLES";
 const countUsers = "SELECT COUNT(*) FROM userTable WHERE endAt IS NULL";
@@ -23,6 +25,7 @@ const getLastUser =
   "SELECT BIN_TO_UUID(userId, 1) FROM userTable \
   ORDER BY userId DESC, startAt DESC LIMIT 1";
 
+/** API から呼び出される関数 */
 async function createUser(): Promise<CreateUserResult> {
   const result: CreateUserResult = { succeeded: false };
   const conn = await db.createNewConn();
@@ -37,7 +40,6 @@ async function createUser(): Promise<CreateUserResult> {
       users["COUNT(*)"] !== undefined
     ) {
       userCount = users["COUNT(*)"];
-      // Compare with the limit number of people
       if (userCount < maxUsers) {
         await db.executeTran(conn, addUser);
         const userId = db.extractElem(await db.executeTran(conn, getLastUser));
@@ -69,6 +71,7 @@ async function createUser(): Promise<CreateUserResult> {
   return report(result);
 }
 
+/** createUser API の実体 */
 export default express.Router().get("/createUser", async (req, res) => {
   try {
     if (lastLog.ipAddress.indexOf(req.ip) > -1) {
