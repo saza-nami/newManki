@@ -6,12 +6,12 @@ author:
 ---
 # 名称
 
-**`intro`** -- Manki API の概要
+**`intro`** -- Manki API for Administrator の概要
 
 # 解説
 
-Manki API は Manki サービスの機能を提供する一連の Web API 群です。
-これらの API を利用することで NinJa の動作を制御することができます。
+Manki API for Administrator は Manki サービスを管理する機能を提供する一連の Web API 群です。
+これらの API を利用することで Manki サービスを管理することができます。
 
 # 定義
 
@@ -19,6 +19,9 @@ Manki API for Administrator Reference Manual では次の用語を定義して�
 
 管理者
 : 車両管理・制御システム `Manki` を管理する人。
+
+（管理者が）使用中である
+: 管理者が終了していない状態。この時、使用中の管理者で新たにログインすることは出来ません。
 
 車
 : NinJa のこと。
@@ -98,11 +101,11 @@ interface PassableInfo extends PassablePoint {
 # 作者
 
 Manki API for Administrator の大部分は [saza-nami][saza-nami] によって書かれました。
-この文書は [Takatomo0424][takatomo0424] によって書かれました。
+この文書は [Takatomo0424][takatomo0424] によって書かれ、[saza-nami][saza-nami] によって修正されました。
 
 # バグ
 
 予告なく変更が加えられる場合があります。
 
 [saza-nami]: https://github.com/saza-nami
-[kusaremkn]: https://github.com/KusaReMKN
+[takatomo0424]: https://github.com/Takatomo0424
