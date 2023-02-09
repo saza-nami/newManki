@@ -60,7 +60,7 @@ Content-Type: application/json; charset=utf-8
 # 作者
 
 Manki API for Administrator の大部分は [saza-nami][saza-nami] によって書かれました。
-この文書は [Takatomo0424][takatomo0424] によって書かれました。
+この文書は [Takatomo0424][takatomo0424] によって書かれ、[saza-nami][saza-nami] によって修正されました。
 
 [saza-nami]: https://github.com/saza-nami
 [takatomo0424]: https://github.com/Takatomo0424
