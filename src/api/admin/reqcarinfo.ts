@@ -1,4 +1,4 @@
-/* 車の情報を渡すAPI */
+/** 車情報を取得する */
 
 import express from "express";
 import { ApiResult, Position } from "types";
@@ -6,6 +6,10 @@ import * as admin from "api/admin/admin";
 import * as db from "database";
 import report from "api/_report";
 
+/** API の返り値 */
+interface ManageCars extends ApiResult {
+  carInformations?: CarInfo[];
+}
 interface CarInfo {
   carId: string;
   status: number;
@@ -14,16 +18,14 @@ interface CarInfo {
   lastAt: string;
 }
 
-interface ManageCars extends ApiResult {
-  carInformations?: CarInfo[];
-}
-
+/** sql */
 const lockCRAR = "LOCK TABLES carTable READ, adminTable READ";
 const unlock = "UNLOCK TABLES";
 const reqCarinfoSql =
   "SELECT BIN_TO_UUID(carId, 1), status, nowPoint, battery, lastAt \
   From carTable LOCK IN SHARE MODE";
 
+/** API から呼び出される関数 */
 async function reqCarInfo(adminId: string): Promise<ManageCars> {
   const result: ManageCars = { succeeded: false };
   let carInformations: CarInfo[] = [];
@@ -79,6 +81,7 @@ async function reqCarInfo(adminId: string): Promise<ManageCars> {
   return report(result);
 }
 
+/** reqCarInfo API の実体 */
 export default express.Router().post("/reqCarInfo", async (req, res) => {
   try {
     if (typeof req.body.adminId === "undefined") {

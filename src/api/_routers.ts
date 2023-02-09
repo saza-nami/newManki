@@ -1,3 +1,5 @@
+/** 各 API を一括でルーティングするためのファイル */
+
 import CreateUserRouter from "api/createuser";
 import IsAcceptable from "api/isacceptable";
 import RouteName from "api/routename";

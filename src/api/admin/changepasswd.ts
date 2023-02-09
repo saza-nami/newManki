@@ -1,4 +1,4 @@
-/* パスワード変更 */
+/** 管理者のパスワードを変更する */
 
 import bcrypt from "bcrypt";
 import express from "express";
@@ -6,6 +6,7 @@ import { ApiResult } from "types";
 import * as db from "database";
 import report from "api/_report";
 
+/** sql */
 const lockAW = "LOCK TABLES adminTable WRITE";
 const unlock = "UNLOCK TABLES";
 const reqAdminPass =
@@ -16,6 +17,7 @@ const changePass =
   WHERE adminId = ?";
 const salt = 14;
 
+/** API から呼び出される関数 */
 async function changePasswd(
   adminId: string,
   currentPasswd: string,
@@ -54,6 +56,7 @@ async function changePasswd(
   return report(result);
 }
 
+/** changePasswd 関数の実体 */
 export default express.Router().post("/changePasswd", async (req, res) => {
   try {
     if (

@@ -1,4 +1,4 @@
-// 命令を実行するときに呼ばれるAPI
+/** 新しい経路の実行を試みる */
 
 import express from "express";
 import { ApiResult, Position, PassablePoint } from "types";
@@ -7,6 +7,7 @@ import * as global from "api/scripts/global";
 import * as map from "api/scripts/map";
 import report from "api/_report";
 
+/** sql */
 const lockUWOWPR =
   "LOCK TABLES userTable WRITE, orderTable WRITE, passableTable READ";
 const unlock = "UNLOCK TABLES";
@@ -23,6 +24,7 @@ const updUserOrderId =
 const reqOrderEndAt =
   "SELECT endAt FROM orderTable WHERE orderId = ? LOCK IN SHARE MODE";
 
+/** API から呼び出される関数 */
 async function reserveRoute(
   userId: string,
   route: Position[][],
@@ -35,9 +37,7 @@ async function reserveRoute(
     await conn.query(lockUWOWPR);
     if ((await global.existUserTran(conn, userId)) === true) {
       const passPoints: PassablePoint[] = await global.getPassPos(conn);
-      // check route in passable area
       if (map.checkRoute(route, passPoints).available === true) {
-        // insert route in the database
         const dest = global.routeToDest(route);
         const existOrder = db.extractElem(
           await db.executeTran(conn, reqUserOrderId, [userId])
@@ -106,6 +106,7 @@ async function reserveRoute(
   return report(result);
 }
 
+/** execRoute API の実体 */
 export default express.Router().post("/execRoute", async (req, res) => {
   try {
     if (

@@ -1,3 +1,5 @@
+/** 複数の API で利用される関数 */
+
 import mysql from "mysql2/promise";
 import * as db from "database";
 import { PassablePoint, Position } from "types";
@@ -7,9 +9,7 @@ export async function existUserTran(
   connected: mysql.PoolConnection,
   userId: string
 ): Promise<boolean> {
-  // JSON で送られてきた userId が UUID の形式か
   const isUuidSql = "SELECT IS_UUID(?) as UUID";
-  // userId が存在するか
   const existUserSql =
     "SELECT COUNT(*) FROM userTable \
     WHERE userId = UUID_TO_BIN(?, 1) AND endAt IS NULL \
@@ -37,12 +37,10 @@ export async function existCarTran(
   connected: mysql.PoolConnection,
   carId: string
 ): Promise<boolean> {
-  // JSON で送られてきた carId が UUID の形式か
   const isUuidSql = "SELECT IS_UUID(?) as UUID";
   const bin = db.extractElem(
     await db.executeTran(connected, isUuidSql, [carId])
   );
-  // carId が存在するか
   const existCarSql =
     "SELECT COUNT(*) FROM carTable WHERE carId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
   if (bin !== undefined && "UUID" in bin && bin["UUID"] === 1) {
@@ -144,7 +142,7 @@ export async function executeTerminate(
   return true;
 }
 
-/** databaseから通行可能領域点群を取得 */
+/** 通行可能領域点群取得 */
 export async function getPassPos(
   connected: mysql.PoolConnection
 ): Promise<PassablePoint[]> {

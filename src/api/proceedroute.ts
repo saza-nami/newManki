@@ -1,4 +1,4 @@
-// 目的地から進ませるときに呼ばれるAPI
+/** 停留所に停まっている車を次の停留所へ進ませる */
 
 import express from "express";
 import { ApiResult } from "types";
@@ -6,6 +6,7 @@ import * as db from "database";
 import * as global from "api/scripts/global";
 import report from "api/_report";
 
+/** sql */
 const reqUserIds =
   "SELECT carId, orderId FROM userTable \
   WHERE userId = UUID_TO_BIN(?, 1) LOCK IN SHARE MODE";
@@ -15,6 +16,7 @@ const reqCarStatus = "SELECT status FROM carTable WHERE carId = ? FOR UPDATE";
 const updArrival = "UPDATE orderTable SET arrival = 0 WHERE orderId = ?";
 const updCarStatus = "UPDATE carTable SET status = 3 WHERE carId = ?";
 
+/** API から呼び出される関数 */
 async function proceedRoute(userId: string): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
   const conn = await db.createNewConn();
@@ -70,6 +72,7 @@ async function proceedRoute(userId: string): Promise<ApiResult> {
   return report(result);
 }
 
+/** proceedRoute API の実体 */
 export default express.Router().post("/proceedRoute", async (req, res) => {
   try {
     if (typeof req.body.userId === "undefined") {

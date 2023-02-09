@@ -1,4 +1,4 @@
-// 状態遷移図の既存ルート選択で呼ばれるAPI
+/** 全ての保存済みの経路名情報を取得する */
 
 import express from "express";
 import { ApiResult, PassablePoint } from "types";
@@ -7,17 +7,20 @@ import * as global from "api/scripts/global";
 import * as map from "api/scripts/map";
 import report from "api/_report";
 
+/** API の返り値 */
+interface RouteInfo extends ApiResult {
+  passableNames?: PassableName[];
+}
 interface PassableName {
   routeName: string;
   available: boolean;
 }
-interface RouteInfo extends ApiResult {
-  passableNames?: PassableName[];
-}
 
+/** sql */
 const getRouteNames =
   "SELECT routeName, route FROM routeTable LOCK IN SHARE MODE";
 
+/** API から呼び出される関数 */
 async function routeNames(userId: string): Promise<RouteInfo> {
   const result: RouteInfo = { succeeded: false };
   const conn = await db.createNewConn();
@@ -27,7 +30,6 @@ async function routeNames(userId: string): Promise<RouteInfo> {
       const passPoints: PassablePoint[] = await global.getPassPos(conn);
       const rows = db.extractElems(await db.executeTran(conn, getRouteNames));
       const passableNames: PassableName[] = [];
-      console.log(rows);
       if (rows !== undefined) {
         if (rows.length === 0) {
           result.succeeded = true;
@@ -64,6 +66,7 @@ async function routeNames(userId: string): Promise<RouteInfo> {
   return report(result);
 }
 
+/** routeName API の実体 */
 export default express.Router().post("/routeName", async (req, res) => {
   try {
     if (typeof req.body.userId === "undefined") {

@@ -1,4 +1,4 @@
-/* 通行可能領域削除 */
+/** 通行可能領域情報を削除する */
 
 import express from "express";
 import { ApiResult } from "types";
@@ -6,10 +6,12 @@ import * as admin from "api/admin/admin";
 import * as db from "database";
 import report from "api/_report";
 
+/** sql */
 const lockPWAR = "LOCK TABLES passableTable WRITE, adminTable READ";
 const unlock = "UNLOCK TABLES";
 const delPassable = "DELETE FROM passableTable WHERE passableId = ?";
 
+/** API から呼び出される関数 */
 async function delPassables(
   adminId: string,
   passId: number[]
@@ -42,6 +44,7 @@ async function delPassables(
   return report(result);
 }
 
+/** delPassable API の実体 */
 export default express.Router().post("/delPassable", async (req, res) => {
   try {
     if (

@@ -1,4 +1,5 @@
-// 車の状態を変更するAPI
+/** 車状態を変更する */
+
 import express from "express";
 import { ApiResult } from "types";
 import * as admin from "api/admin/admin";
@@ -6,11 +7,13 @@ import * as db from "database";
 import * as global from "api/scripts/global";
 import report from "api/_report";
 
+/** sql */
 const lockCWAR = "LOCK TABLES carTable WRITE, adminTable READ";
 const unlock = "UNLOCK TABLES";
 const checkStatus =
   "UPDATE carTable SET status = 6 WHERE carId = UUID_TO_BIN(?, 1) AND status = 5";
 
+/** API から呼び出される関数 */
 async function manageCar(adminId: string, carId: string): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
   const conn = await db.createNewConn();
@@ -40,6 +43,8 @@ async function manageCar(adminId: string, carId: string): Promise<ApiResult> {
   }
   return report(result);
 }
+
+/** manageCar API の実体 */
 export default express.Router().post("/manageCar", async (req, res) => {
   try {
     if (

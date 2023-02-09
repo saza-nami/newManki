@@ -1,15 +1,17 @@
+/** execastar から実行されるスレッド */
+
 import { parentPort, workerData } from "worker_threads";
 import { ApiResult, PassablePoint, Position } from "types";
 import * as astar from "api/scripts/notNotAstar";
 import * as map from "api/scripts/map";
 import report from "api/_report";
 
+/** API の返り値 */
 interface CreateRoute extends ApiResult {
   route?: Position[];
   reason?: string;
 }
 
-/** スレッド化した astar 関数 */
 function thAstar(target: Position[], passPoints: PassablePoint[]): CreateRoute {
   const result: CreateRoute = { succeeded: false };
   let point = 0;
@@ -57,5 +59,6 @@ function thAstar(target: Position[], passPoints: PassablePoint[]): CreateRoute {
   return result;
 }
 
+/** 実処理 */
 const result = thAstar(workerData.target, workerData.passPoints);
 parentPort?.postMessage(result);

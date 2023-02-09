@@ -1,8 +1,9 @@
 /* 管理者の操作に使用する定数, 関数 */
-import bcrypt from "bcrypt";
+
 import mysql from "mysql2/promise";
 import * as db from "database";
 
+/** 管理者識別子が有効か */
 export async function existAdminTran(
   connected: mysql.PoolConnection,
   adminId: string
@@ -29,9 +30,10 @@ export async function existAdminTran(
   return false;
 }
 
+/** 管理者強制終了 */
 export async function terminateInterval(): Promise<boolean> {
   const terminateAdminSql =
-    "UPDATE adminTable SET endAt = NOW() \
+    "UPDATE adminTable SET adminId = null, endAt = NOW() \
     WHERE startAt <= SUBTIME(NOW(), '01:00:00') AND endAt IS NULL";
 
   const conn = await db.createNewConn();

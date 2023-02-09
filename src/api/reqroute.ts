@@ -1,4 +1,4 @@
-// 状態遷移図の既存経路選択で呼ばれるAPI
+/** 保存済みの経路を取得する */
 
 import express from "express";
 import { ApiResult, Position, PassablePoint } from "types";
@@ -7,16 +7,19 @@ import * as global from "api/scripts/global";
 import * as map from "api/scripts/map";
 import report from "api/_report";
 
+/** API の返り値 */
 interface RouteInfo extends ApiResult {
   route?: Position[][];
   dest?: Position[];
   junkai?: boolean;
 }
 
+/** sql */
 const reqRouteInfo =
   "SELECT route, dest, junkai FROM routeTable \
   WHERE routeName = ? LOCK IN SHARE MODE";
 
+/** API から呼び出される関数 */
 async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
   const result: RouteInfo = { succeeded: false };
   const conn = await db.createNewConn();
@@ -63,6 +66,7 @@ async function reqRoute(userId: string, routeName: string): Promise<RouteInfo> {
   return report(result);
 }
 
+/** reqRoute API の実体 */
 export default express.Router().post("/reqRoute", async (req, res) => {
   try {
     if (
