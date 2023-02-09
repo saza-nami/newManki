@@ -1,3 +1,5 @@
+/** サーバ内部で実行される処理など */
+
 import { Position, PassablePoint, Allocated, order, car } from "types";
 import * as Astar from "api/scripts/notNotAstar";
 import * as db from "database";

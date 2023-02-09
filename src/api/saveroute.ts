@@ -1,4 +1,4 @@
-// 状態遷移図の経路保存で呼ばれるAPI
+/** 経路に名前を付けて保存する */
 
 import express from "express";
 import { ApiResult, Position, PassablePoint } from "types";
@@ -7,17 +7,24 @@ import * as global from "api/scripts/global";
 import * as map from "api/scripts/map";
 import report from "api/_report";
 
+/** API の返り値 */
 interface SaveRoute extends ApiResult {
   routeName?: string;
 }
+/** 経路に付けられる名前の最大長 */
 const nameLength = 255;
+
+/** 経路情報を構成する JSON の最大サイズ */
 const bufferLength = 6700000;
+
+/** sql */
 const addRoute =
   "INSERT INTO routeTable(routeName, route, dest, junkai) \
   VALUES (?, JSON_QUOTE(?), JSON_QUOTE(?), ?)";
 const searchName =
   "SELECT COUNT(*) FROM routeTable WHERE routeName = ? LOCK IN SHARE MODE";
 
+/** API から呼び出される関数 */
 async function saveRoute(
   userId: string,
   routeName: string,
@@ -46,7 +53,6 @@ async function saveRoute(
           if (existName["COUNT(*)"] > 0) {
             result.reason = "Duplicate routeName.";
           } else {
-            // 経路チェック
             const checkResult = map.checkRoute(route, passPoints);
             if (checkResult.reason !== undefined) {
               result.reason =
@@ -84,6 +90,7 @@ async function saveRoute(
   return report(result);
 }
 
+/** saveRote API の実体 */
 export default express.Router().post("/saveRoute", async (req, res) => {
   try {
     if (

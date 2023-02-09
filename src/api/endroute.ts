@@ -1,4 +1,4 @@
-// 命令を終了するときに呼ばれるAPI
+/** ユーザに紐付けられている経路の実行をキャンセルする */
 
 import express from "express";
 import { ApiResult } from "types";
@@ -6,12 +6,14 @@ import * as db from "database";
 import * as global from "api/scripts/global";
 import report from "api/_report";
 
+/** sql */
+const lockOWCW = "LOCK TABLES orderTable WRITE, carTable WRITE, userTable READ";
+const unlock = "UNLOCK TABLES";
+
+/** API から呼び出される関数 */
 async function endRoute(userId: string): Promise<ApiResult> {
   const result: ApiResult = { succeeded: false };
   const conn = await db.createNewConn();
-  const lockOWCW =
-    "LOCK TABLES orderTable WRITE, carTable WRITE, userTable READ";
-  const unlock = "UNLOCK TABLES";
   try {
     await conn.beginTransaction();
     await conn.query(lockOWCW);
@@ -35,6 +37,7 @@ async function endRoute(userId: string): Promise<ApiResult> {
   return report(result);
 }
 
+/** endRoute API の実体 */
 export default express.Router().post("/endRoute", async (req, res) => {
   try {
     if (typeof req.body.userId === "undefined") {

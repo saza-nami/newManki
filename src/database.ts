@@ -1,3 +1,5 @@
+/** データベースに関するファイル */
+
 import mysql from "mysql2/promise";
 
 export const CONNECTION_OPTIONS: mysql.ConnectionOptions = {
@@ -17,7 +19,7 @@ const CONNECTIONPOOL_OPTIONS: mysql.PoolOptions = {
 
 const createPool = mysql.createPool(CONNECTIONPOOL_OPTIONS);
 
-// もはや使用されていない execute
+/** もはや使用されていない execute 関数 */
 async function execute<
   T extends
     | mysql.RowDataPacket[][]
