@@ -57,7 +57,7 @@ async function reqCarInfo(adminId: string): Promise<ManageCars> {
               status: elem["status"],
               nowPoint: elem["nowPoint"],
               battery: elem["battery"],
-              lastAt: elem["lastAt"].toUTCString(),
+              lastAt: elem["lastAt"].toJSON(), // <-- toJSON
             });
           }
         }
