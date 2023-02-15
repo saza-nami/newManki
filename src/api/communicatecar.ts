@@ -82,7 +82,8 @@ async function createReply(
   sequence?: number
 ): Promise<ReplyInfo> {
   const result: ReplyInfo = { succeeded: false };
-  const rndSeq = Math.trunc(Math.random() * 4294967294) + 1;
+  const rndSeq = (Math.random() * 2147483646 + 1) | 0;
+  console.log(rndSeq);
   const conn = await db.createNewConn();
   try {
     await conn.beginTransaction();
@@ -370,7 +371,10 @@ export default express.Router().post("/sendCarInfo", async (req, res) => {
           );
           lastLog.date.unshift(date);
           lastLog.ipAddress.unshift(ip);
-          return res.json({ succeeded: false });
+          return res.json({
+            succeeded: false,
+            reason: "Please allow some time and access again.",
+          });
         } else {
           lastLog.date[lastLog.ipAddress.indexOf(req.ip)] = Date.now();
         }
@@ -379,6 +383,7 @@ export default express.Router().post("/sendCarInfo", async (req, res) => {
         lastLog.ipAddress.push(req.ip);
       }
     }
+
     if (
       req.body.request === "hello" &&
       typeof req.body.location !== "undefined" &&
