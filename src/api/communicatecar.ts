@@ -371,7 +371,10 @@ export default express.Router().post("/sendCarInfo", async (req, res) => {
           );
           lastLog.date.unshift(date);
           lastLog.ipAddress.unshift(ip);
-          return res.json({ succeeded: false });
+          return res.json({
+            succeeded: false,
+            reason: "Please allow some time and access again.",
+          });
         } else {
           lastLog.date[lastLog.ipAddress.indexOf(req.ip)] = Date.now();
         }
