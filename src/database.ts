@@ -2,13 +2,6 @@
 
 import mysql from "mysql2/promise";
 
-export const CONNECTION_OPTIONS: mysql.ConnectionOptions = {
-  host: "db.kohga.local",
-  database: "test",
-  user: "user",
-  password: "P@ssw0rd",
-};
-
 const CONNECTIONPOOL_OPTIONS: mysql.PoolOptions = {
   connectionLimit: 10,
   host: "db.kohga.local",
