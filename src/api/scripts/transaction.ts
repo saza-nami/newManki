@@ -136,6 +136,8 @@ export async function unallocateCarTran() {
                     order.orderId,
                   ]);
                   await db.executeTran(conn2, updCarStatus, [car.carId]);
+                } else {
+                  allocFlag = false;
                 }
               }
               await conn2.commit();
@@ -386,6 +388,8 @@ export async function allocatedCarTran() {
                   ]);
                   await db.executeTran(conn4, updCarStatus, [car.carId]);
                 }
+              } else {
+                allocFlag = false;
               }
               await conn4.commit();
               await conn4.query(unlock);
