@@ -31,7 +31,7 @@ export async function existAdminTran(
 }
 
 /** 管理者強制終了 */
-export async function terminateInterval(): Promise<boolean> {
+export async function terminateInterval() {
   const terminateAdminSql =
     "UPDATE adminTable SET adminId = null, endAt = NOW() \
     WHERE startAt <= SUBTIME(NOW(), '01:00:00') AND endAt IS NULL";
@@ -47,5 +47,5 @@ export async function terminateInterval(): Promise<boolean> {
   } finally {
     conn.release();
   }
-  return true;
+  setTimeout(() => terminateInterval(), 5000);
 }
