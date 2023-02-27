@@ -3,6 +3,7 @@
 import express from "express";
 import { ApiResult, PassablePoint } from "types";
 import * as db from "database";
+import * as global from "api/scripts/global";
 import report from "api/_report";
 
 /** API の返り値 */
