@@ -7,10 +7,13 @@ const rad2deg = (rad: number) => rad / (Math.PI / 180.0);
 const RNeE = 6378137.0;
 /** 極半径[m] */
 const RNpE = 6356752.314;
+/** 離心率の自乗; ((RNeEˆ2 - RNpEˆ2) / RNeEˆ2) */
 const EE = 6.6943800667647752646078789117815793753471556034992729408828e-3;
 
+/** 子午線曲率半径 */
 const RoPMC = (alat: number) =>
   (RNeE * (1 - EE)) / Math.pow(1 - EE * Math.sin(alat) ** 2, 1.5);
+/** 卯酉線曲率半径 */
 const RoPVC = (alat: number) => RNeE / Math.sqrt(1 - EE * Math.sin(alat) ** 2);
 
 /** 地点間距離算出 */
