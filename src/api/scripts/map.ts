@@ -52,6 +52,19 @@ function checkRoute(
         };
       }
     }
+    if (route.length - i > 1) {
+      if (
+        !isReachable(route[i][route[i].length - 1], route[i + 1][0], passPoints)
+      ) {
+        return {
+          available: false,
+          reason: {
+            route: i,
+            pos: route[i].length - 1,
+          },
+        };
+      }
+    }
   }
   return { available: true };
 }
